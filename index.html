@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Number Kitchen">
+<meta name="theme-color" content="#ffb703">
+<title>Number Kitchen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&family=Andika:wght@400;700&display=swap" rel="stylesheet">
+<!-- Inline so the app makes no extra request (and Safari stops 404ing for one). -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23ffb703'/%3E%3Ctext x='50' y='72' font-size='64' font-family='sans-serif' font-weight='bold' text-anchor='middle' fill='%23fff'%3E7%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/style.css">
+<script>
+// Belt-and-suspenders against iOS Safari's double-tap-to-zoom. `touch-action: manipulation`
+// (see style.css) and the game's own `pointerdown` handlers already call preventDefault, but
+// WebKit's double-tap-zoom gesture recognizer watches raw touchend timing regardless of that –
+// so a genuine accidental double-tap can still zoom the page. Cancelling the second touchend
+// within a normal double-tap window stops it at the source.
+(function () {
+  var lastTouchEnd = 0;
+  document.addEventListener('touchend', function (e) {
+    var now = Date.now();
+    if (now - lastTouchEnd < 350) e.preventDefault();
+    lastTouchEnd = now;
+  }, { passive: false });
+})();
+</script>
+</head>
+<body>
+<div id="app">
+
+  <!-- Start (also unlocks audio on iPad) -->
+  <section id="screen-start" class="screen active">
+    <div class="start-inner">
+      <h1 class="logo"><span class="n">Number</span> <span class="k">Kitchen</span></h1>
+      <div class="start-parade"><span>🍕</span><span>🧁</span><span>🥪</span><span>🥤</span><span>🥞</span></div>
+      <button id="btn-start" class="big-btn">Let's cook!</button>
+    </div>
+  </section>
+
+  <!-- The recipe book -->
+  <section id="screen-book" class="screen">
+    <header class="bar">
+      <h2>Recipe Book</h2>
+      <button class="chip" data-go="cafe">☕ Café <b id="cafe-count">0</b></button>
+    </header>
+    <div id="recipe-grid" class="recipe-grid"></div>
+  </section>
+
+  <!-- Cooking: one stage at a time -->
+  <section id="screen-cook" class="screen">
+    <header class="bar cook-bar">
+      <button class="chip back" data-go="book">◀</button>
+      <span class="cook-title"><span id="cook-icon"></span> <span id="cook-name"></span></span>
+      <span id="cook-steps" class="steps"></span>
+    </header>
+    <p id="stage-prompt" class="prompt"></p>
+    <div class="stage-top">
+      <!-- The target numeral. Stays on screen for the whole stage, and can be
+           tapped to hear the number again. -->
+      <button id="stage-target" class="target"></button>
+      <!-- Fixed ten-frames: always 10 slots each, so the frame never gives the
+           answer away. The second one slides in once the first is full. -->
+      <div id="stage-frames" class="frames"></div>
+    </div>
+    <div id="stage-area" class="stage-area"></div>
+  </section>
+
+  <!-- Dish finished -->
+  <section id="screen-served" class="screen">
+    <div class="served-inner">
+      <span id="served-badge" class="badge"></span>
+      <span id="served-icon" class="served-icon"></span>
+      <h2 id="served-name"></h2>
+      <p id="served-next" class="served-next"></p>
+      <div class="row">
+        <button id="btn-served-cafe" class="big-btn">To the café</button>
+        <button id="btn-served-book" class="big-btn ghost-btn">Cook another</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- The café: where finished dishes live -->
+  <section id="screen-cafe" class="screen parked">
+    <header class="bar">
+      <button class="chip back" data-go="book">◀</button>
+      <h2>The Café</h2>
+    </header>
+    <div class="cafe-room">
+      <div id="cafe-counter" class="cafe-counter"></div>
+      <p id="cafe-empty" class="cafe-empty">Nothing on the counter yet — go and cook something!</p>
+    </div>
+  </section>
+
+</div>
+
+<canvas id="fx"></canvas>
+
+<!-- Grown-ups: hold to open -->
+<button id="btn-parent" class="parent-btn" aria-label="Grown-ups">⚙️</button>
+
+<div id="parent-panel" class="panel hidden">
+  <div class="panel-inner">
+    <h3>Grown-ups</h3>
+
+    <section>
+      <h4>Numbers in play</h4>
+      <p class="muted">Range widens on its own as each number is read correctly first time.
+        Currently up to <b id="pp-ceiling">5</b>.</p>
+      <div id="pp-pin" class="seg">
+        <button class="seg-btn" data-pin="auto">Auto</button>
+        <button class="seg-btn" data-pin="5">1–5</button>
+        <button class="seg-btn" data-pin="10">1–10</button>
+        <button class="seg-btn" data-pin="20">1–20</button>
+      </div>
+    </section>
+
+    <section>
+      <h4>How she's going</h4>
+      <p class="muted">Percentage read correctly first time. Green means solid; faded means not in play yet.</p>
+      <div id="pp-table" class="numtable"></div>
+    </section>
+
+    <section>
+      <h4>Progress</h4>
+      <div class="row wrap">
+        <button id="pp-unlock" class="mini">Unlock all recipes</button>
+        <button id="pp-export" class="mini">Save to file</button>
+        <label class="mini file">Restore<input id="pp-import" type="file" accept="application/json" hidden></label>
+        <button id="pp-reset" class="mini danger">Reset everything</button>
+      </div>
+    </section>
+
+    <button id="pp-close" class="big-btn">Done</button>
+  </div>
+</div>
+
+<div id="a2hs-note" class="a2hs hidden">
+  Tap <b>Share</b> → <b>Add to Home Screen</b> for full screen and safer saves.
+  <button id="a2hs-close" aria-label="Dismiss">✕</button>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/voice-manifest.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/fx.js"></script>
+<script src="js/range.js"></script>
+<script src="js/stages.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

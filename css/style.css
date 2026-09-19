@@ -1,0 +1,359 @@
+/* Number Kitchen — all styling and animation.
+   Performance rules (see CLAUDE.md): animate only transform and opacity, never put
+   a filter on anything that moves, and pause animations on inactive screens. */
+
+:root {
+  --cream: #fff6e6;
+  --crust: #e8c27a;
+  --ink: #3b2b20;
+  --sun: #ffb703;
+  --tile: #ffffff;
+  --recipe: #e8542f;         /* set per recipe by app.js */
+  --shadow: 0 6px 0 rgba(0, 0, 0, 0.12);
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0; padding: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: 'Fredoka', system-ui, sans-serif;
+  touch-action: manipulation;
+  -webkit-user-select: none; user-select: none;
+  -webkit-text-size-adjust: 100%;
+}
+
+#app { position: fixed; inset: 0; }
+
+/* ---------- screens ---------- */
+.screen {
+  position: absolute; inset: 0;
+  visibility: hidden; opacity: 0;
+  display: flex; flex-direction: column;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  transition: opacity 0.22s ease;
+}
+.screen.active { visibility: visible; opacity: 1; }
+/* `visibility: hidden` does NOT stop CSS animations, so always-on animations are
+   paused unless their screen is the active one. Listed individually on purpose —
+   a blanket :not(.active) * selector is slower to match than the animations it saves. */
+.screen:not(.active) .logo,
+.screen:not(.active) .start-parade span,
+.screen:not(.active) .target,
+.screen:not(.active) .dish,
+.screen:not(.active) .served-icon { animation-play-state: paused; }
+/* Heavier scenes are parked outright so they cost nothing from page load. */
+.screen.parked { display: none; }
+
+#fx { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 40; }
+
+/* ---------- start ---------- */
+.start-inner { margin: auto; text-align: center; padding: 24px; }
+.logo { font-size: clamp(40px, 9vw, 86px); margin: 0 0 8px; line-height: 1.05; animation: bob 3s ease-in-out infinite; }
+.logo .n { color: var(--sun); }
+.logo .k { color: var(--recipe); }
+.start-parade { font-size: clamp(34px, 7vw, 60px); display: flex; gap: 14px; justify-content: center; margin: 18px 0 30px; }
+.start-parade span { animation: bob 2.2s ease-in-out infinite; }
+.start-parade span:nth-child(2) { animation-delay: .2s; }
+.start-parade span:nth-child(3) { animation-delay: .4s; }
+.start-parade span:nth-child(4) { animation-delay: .6s; }
+.start-parade span:nth-child(5) { animation-delay: .8s; }
+@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
+.big-btn {
+  font-family: inherit; font-size: clamp(20px, 3.4vw, 30px); font-weight: 700;
+  color: #fff; background: var(--sun);
+  border: 0; border-radius: 999px; padding: 16px 40px;
+  box-shadow: var(--shadow); cursor: pointer;
+}
+.big-btn:active { transform: translateY(3px); box-shadow: 0 3px 0 rgba(0,0,0,.12); }
+.big-btn.ghost-btn { background: #fff; color: var(--ink); }
+
+/* ---------- bars ---------- */
+.bar {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 18px; flex: 0 0 auto;
+}
+.bar h2 { margin: 0; font-size: clamp(22px, 3.4vw, 32px); }
+.chip {
+  font-family: inherit; font-size: clamp(15px, 2.2vw, 20px); font-weight: 600;
+  background: #fff; color: var(--ink); border: 0; border-radius: 999px;
+  padding: 9px 18px; box-shadow: var(--shadow); cursor: pointer; margin-left: auto;
+}
+.chip.back { margin-left: 0; padding: 9px 20px; }
+.chip:active { transform: translateY(2px); }
+
+/* ---------- recipe book ---------- */
+.recipe-grid {
+  flex: 1 1 auto; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  display: grid; gap: 16px; padding: 6px 18px 26px;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  align-content: start;
+}
+.recipe {
+  font-family: inherit; text-align: center; cursor: pointer;
+  background: var(--tile); border: 0; border-top: 8px solid var(--c);
+  border-radius: 22px; padding: 18px 12px 16px;
+  box-shadow: var(--shadow);
+  display: flex; flex-direction: column; gap: 4px; align-items: center;
+  animation: pop-in .3s backwards;
+}
+@keyframes pop-in { from { opacity: 0; transform: scale(.85); } }
+.recipe:active { transform: translateY(3px); }
+.recipe.locked { opacity: .55; border-top-color: #c9c2ba; }
+.r-icon { font-size: clamp(40px, 6vw, 58px); line-height: 1; }
+.r-name { font-size: clamp(19px, 2.6vw, 25px); font-weight: 700; }
+.r-blurb { font-family: 'Andika', sans-serif; font-size: 14px; opacity: .65; }
+.r-made { font-size: 15px; letter-spacing: 2px; }
+.wobble { animation: wobble .4s ease; }
+@keyframes wobble { 25% { transform: rotate(-4deg); } 75% { transform: rotate(4deg); } }
+
+/* ---------- cooking ---------- */
+.cook-bar { gap: 14px; }
+.cook-title { font-size: clamp(18px, 2.6vw, 26px); font-weight: 700; }
+.steps { display: flex; gap: 7px; margin-left: auto; }
+.pip { width: 11px; height: 11px; border-radius: 50%; background: #e0d6c8; }
+.pip.done { background: var(--recipe); }
+.pip.now { background: var(--sun); transform: scale(1.35); }
+
+.prompt {
+  margin: 0; padding: 0 20px 8px; flex: 0 0 auto;
+  font-family: 'Andika', sans-serif; font-size: clamp(17px, 2.6vw, 26px); text-align: center;
+}
+
+.stage-top {
+  flex: 0 0 auto; display: flex; align-items: center; justify-content: center;
+  gap: clamp(14px, 3vw, 34px); padding: 2px 18px 10px;
+}
+/* The target numeral: the thing she has to read. Big, high contrast, always there. */
+.target {
+  font-family: inherit; font-weight: 700; cursor: pointer;
+  font-size: clamp(50px, 9vw, 96px); line-height: 1;
+  min-width: clamp(84px, 13vw, 140px);
+  color: #fff; background: var(--recipe);
+  border: 0; border-radius: 24px; padding: 6px 18px 12px;
+  box-shadow: var(--shadow);
+}
+.target.two { letter-spacing: -2px; }
+.target.pulse { animation: pulse .5s ease; }
+@keyframes pulse { 40% { transform: scale(1.12); } }
+
+/* Ten-frames. Fixed at 10 slots each — never sized to the target, or the frame
+   would hand her the answer. The second frame appears only once the first fills. */
+.frames { display: flex; gap: 14px; align-items: center; }
+.ten-frame {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px;
+  padding: 5px; background: #fff; border-radius: 12px; box-shadow: var(--shadow);
+}
+.ten-frame.second { display: none; }
+.frames.wide .ten-frame.second { display: grid; animation: slide-in .3s ease backwards; }
+@keyframes slide-in { from { opacity: 0; transform: translateX(-16px); } }
+.slot {
+  width: clamp(16px, 2.3vw, 26px); height: clamp(16px, 2.3vw, 26px);
+  border-radius: 6px; background: #f0eade;
+}
+.slot.on { background: var(--sun); }
+
+.stage-area { flex: 1 1 auto; position: relative; overflow: hidden; padding: 0 18px 14px; }
+.stage-area.done { animation: flash .5s ease; }
+@keyframes flash { 40% { transform: scale(1.02); } }
+
+.vessel {
+  position: absolute; left: 50%; top: 2%;
+  width: min(68%, 520px); transform: translateX(-50%);
+}
+/* Stages that carry a control or a hint underneath leave room for it. */
+.vessel.big { top: 5%; width: min(62%, 470px); }
+.vessel svg { width: 100%; height: auto; display: block; }
+
+/* Where placed items land: a five-column grid mirroring a ten-frame row, so up to
+   twenty items sit predictably and none needs its own shadow. */
+.drop {
+  position: absolute; inset: 22% 12% 8%;
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  gap: 2%; align-content: center; justify-items: center; align-items: center;
+}
+/* Where each vessel can actually hold something, as a fraction of its 200x140 art
+   box: inside the bowl, on the red of the pizza, in the oven cavity. Keeping these
+   with the art means a new vessel needs no change to js/stages.js. */
+.v-bowl    .drop { inset: 37% 11% 10%; }
+.v-dough   .drop { inset: 17%  8% 11%; }
+.v-pizza   .drop { inset: 13% 24% 13%; }
+.v-oven    .drop { inset: 36% 23% 21%; }
+.v-blender .drop { inset: 17% 32% 29%; }
+.v-plate   .drop { inset: 26% 16% 26%; }
+.v-tray    .drop { inset: 16%  5% 16%; }
+.v-pan     .drop { inset: 31% 14% 23% 18%; }
+.item {
+  border: 0; background: none; padding: 0; cursor: pointer;
+  width: clamp(28px, 4.4vw, 52px); height: clamp(28px, 4.4vw, 52px);
+}
+.item svg { width: 100%; height: 100%; display: block; }
+.item.placed { animation: drop-in .25s ease backwards; }
+@keyframes drop-in { from { opacity: 0; transform: translateY(-24px) scale(.6); } }
+.item.ghost { position: fixed; left: 0; top: 0; z-index: 50; pointer-events: none; opacity: .85; }
+
+/* Inset from the grown-ups gear in the bottom-right, so a supply item can never
+   end up underneath it. */
+.supply {
+  position: absolute; left: 58px; right: 58px; bottom: 6px;
+  display: flex; gap: clamp(10px, 2.4vw, 26px); justify-content: center;
+  padding: 10px; background: #fff; border-radius: 22px; box-shadow: var(--shadow);
+}
+.supply-item { width: clamp(40px, 6vw, 68px); height: clamp(40px, 6vw, 68px); }
+.supply-item:active { transform: scale(1.12); }
+
+.hint {
+  position: absolute; left: 0; right: 0; bottom: 14px; margin: 0; text-align: center;
+  font-family: 'Andika', sans-serif; font-size: clamp(15px, 2.2vw, 21px); opacity: .6;
+}
+
+/* count-gesture: the tool that moves when she swipes */
+.tool { position: absolute; inset: 0; pointer-events: none; }
+.tool.go { animation: tool-go .35s ease; }
+@keyframes tool-go { 50% { transform: translateX(8%) rotate(-5deg); } }
+.count-gesture .vessel { cursor: grab; }
+
+/* set-dial */
+.dial {
+  position: absolute; left: 50%; bottom: 8%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: clamp(14px, 3vw, 30px);
+}
+.knob {
+  font-family: inherit; font-size: clamp(30px, 5vw, 46px); font-weight: 700; line-height: 1;
+  width: clamp(64px, 9vw, 96px); height: clamp(64px, 9vw, 96px);
+  border: 0; border-radius: 50%; background: #fff; color: var(--ink);
+  box-shadow: var(--shadow); cursor: pointer;
+}
+.knob:active { transform: translateY(3px); }
+.readout {
+  min-width: clamp(90px, 13vw, 150px); text-align: center;
+  font-size: clamp(44px, 8vw, 80px); font-weight: 700;
+  background: #33414f; color: #7fe08a; border-radius: 18px; padding: 4px 16px 10px;
+}
+.readout span.bump { display: inline-block; animation: pulse .25s ease; }
+.set-dial.running .vessel { animation: bob .6s ease-in-out infinite; }
+
+/* cut-into */
+.cuts { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.cut { stroke: var(--cream); stroke-width: 5; stroke-linecap: round; }
+.cutting.shake { animation: shake .25s ease; }
+@keyframes shake { 30% { transform: translateX(-50%) rotate(-1.5deg); } 70% { transform: translateX(-50%) rotate(1.5deg); } }
+
+/* match-1to1 */
+.match .guests {
+  position: absolute; inset: 0 0 26% 0;
+  display: flex; flex-wrap: wrap; gap: clamp(10px, 2.4vw, 26px);
+  align-content: center; justify-content: center;
+}
+.guest {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  cursor: pointer; padding: 6px; border-radius: 18px;
+}
+.guest .face { width: clamp(56px, 8vw, 96px); display: block; }
+.guest .face svg { width: 100%; height: auto; display: block; }
+.guest .name { font-size: 14px; font-weight: 600; opacity: .7; }
+.guest .plate {
+  width: clamp(34px, 5vw, 54px); height: clamp(34px, 5vw, 54px);
+  border-radius: 50%; background: #fff; box-shadow: var(--shadow);
+  display: grid; place-items: center;
+}
+.guest .plate svg { width: 80%; height: 80%; }
+.guest.fed { animation: pulse .4s ease; }
+.guest.fed .name::after { content: ' 😋'; }
+
+/* ---------- served ---------- */
+.served-inner { margin: auto; text-align: center; padding: 24px; }
+.badge {
+  display: inline-block; background: var(--sun); color: #fff; font-weight: 700;
+  border-radius: 999px; padding: 6px 20px; font-size: clamp(15px, 2.2vw, 21px);
+}
+.served-icon { display: block; font-size: clamp(90px, 18vw, 190px); line-height: 1; margin: 10px 0; animation: bob 2.4s ease-in-out infinite; }
+.served-inner h2 { margin: 0; font-size: clamp(32px, 6vw, 60px); }
+.served-next { font-family: 'Andika', sans-serif; font-size: clamp(16px, 2.4vw, 23px); color: var(--recipe); min-height: 1.4em; }
+.row { display: flex; gap: 14px; justify-content: center; margin-top: 16px; }
+.row.wrap { flex-wrap: wrap; }
+
+/* ---------- café ---------- */
+.cafe-room {
+  flex: 1 1 auto; position: relative; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  background: linear-gradient(180deg, #fff2d6 0%, #ffe3b0 100%);
+}
+.cafe-counter {
+  display: flex; flex-wrap: wrap; gap: 18px; justify-content: center;
+  padding: 28px 18px 40px;
+}
+.dish {
+  font-family: inherit; cursor: pointer;
+  background: #fff; border: 0; border-bottom: 8px solid var(--c);
+  border-radius: 20px; padding: 16px 22px 12px; box-shadow: var(--shadow);
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  animation: bob 3.4s ease-in-out infinite;
+}
+.dish:nth-child(2n) { animation-delay: .5s; }
+.dish:nth-child(3n) { animation-delay: 1s; }
+.d-icon { font-size: clamp(42px, 7vw, 68px); line-height: 1; }
+.d-name { font-size: clamp(16px, 2.2vw, 21px); font-weight: 700; }
+.d-count { font-size: 14px; opacity: .6; }
+.cafe-empty { text-align: center; font-family: 'Andika', sans-serif; opacity: .6; padding: 0 30px; }
+.hidden { display: none !important; }
+
+/* ---------- grown-ups ---------- */
+.parent-btn {
+  position: fixed; right: 10px; bottom: 10px; z-index: 45;
+  width: 46px; height: 46px; border: 0; border-radius: 50%;
+  background: rgba(255, 255, 255, .5); font-size: 21px; cursor: pointer; opacity: .5;
+}
+.parent-btn.holding { opacity: 1; transform: scale(1.12); }
+
+.panel {
+  position: fixed; inset: 0; z-index: 60;
+  background: rgba(0, 0, 0, .45);
+  display: flex; align-items: center; justify-content: center; padding: 18px;
+}
+.panel-inner {
+  background: #fff; border-radius: 24px; padding: 22px 24px;
+  width: min(680px, 100%); max-height: 100%; overflow-y: auto; text-align: center;
+}
+.panel-inner h3 { margin: 0 0 4px; font-size: 26px; }
+.panel-inner h4 { margin: 18px 0 4px; font-size: 18px; }
+.muted { font-family: 'Andika', sans-serif; font-size: 14px; opacity: .65; margin: 0 0 10px; }
+.seg { display: inline-flex; gap: 6px; background: #f2ede4; padding: 5px; border-radius: 999px; }
+.seg-btn {
+  font-family: inherit; font-size: 16px; border: 0; background: none;
+  border-radius: 999px; padding: 8px 18px; cursor: pointer;
+}
+.seg-btn.sel { background: var(--sun); color: #fff; font-weight: 700; }
+
+.numtable { display: grid; grid-template-columns: repeat(10, 1fr); gap: 5px; margin-top: 6px; }
+.cell {
+  display: flex; flex-direction: column; align-items: center; padding: 6px 0;
+  background: #f4f0e8; border-radius: 9px; font-size: 15px;
+}
+.cell b { font-weight: 700; }
+.cell i { font-style: normal; font-size: 11px; opacity: .6; }
+.cell.mastered { background: #cdebcf; }
+.cell.asleep { opacity: .35; }
+
+.mini {
+  font-family: inherit; font-size: 15px; border: 0; background: #f2ede4;
+  border-radius: 999px; padding: 10px 18px; cursor: pointer;
+}
+.mini.danger { background: #ffdcd6; }
+.mini.file { display: inline-block; }
+#pp-close { margin-top: 20px; }
+
+.a2hs {
+  position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 55;
+  background: #fff; border-radius: 16px; padding: 12px 42px 12px 16px;
+  box-shadow: var(--shadow); font-family: 'Andika', sans-serif; font-size: 15px;
+}
+.a2hs button { position: absolute; right: 8px; top: 8px; border: 0; background: none; font-size: 17px; cursor: pointer; }
+
+/* Landscape is the intended orientation, but nothing breaks in portrait. */
+@media (orientation: portrait) and (max-width: 820px) {
+  .stage-top { flex-direction: column; gap: 10px; }
+}

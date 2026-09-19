@@ -1,0 +1,6 @@
+# Netlify continuous deployment: builds from the GitHub repo on every push to main,
+# and publishes a deploy preview for every pull request so a branch can be tried on
+# the iPad before merging.
+[build]
+  command = "bash build.sh"
+  publish = "deploy"
