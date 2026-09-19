@@ -52,9 +52,15 @@ These come from the brief and exist for the player, not for tidiness.
   reads high against the target. Items can always be removed. A stage completes on a match and
   the count is spoken as celebration, never as a verdict. Wrong things wobble; they never buzz.
 - **The target numeral stays on screen** for the whole stage, so she can always re-read it.
-- **Never show the target as a count of empty slots.** Ten-frames are fixed at 10 capacity and
-  fill as she places, so she still has to read the numeral. A second frame slides in only once
-  the first is full — that is what makes 13 read as "a full tray and 3 more".
+- **Never show the target as a count of empty slots.** The tally is two muffin trays of ten
+  wells, fixed at 10 each, filling as she places — so she still has to read the numeral. The
+  second tray slides in only once the first is full, which is what makes 13 read as "a full tray
+  and 3 more". It is drawn as a tray rather than a grid of grey squares because the pedagogy is
+  the same either way and one of them looks like a worksheet.
+- **The numeral is a recipe card, not a UI chip** — paper, tilted, with the recipe's colour as a
+  band across the top and the number in dark ink. Dark-on-light is how a numeral is presented for
+  learning; white-on-saturated was a UI habit. Its prominence is not negotiable, but its styling
+  is, and it has to belong to the kitchen.
 - **Difficulty is decoupled from content.** Number range comes from `js/range.js` at runtime, never
   from the recipe data. Any recipe can run at any range.
 - **No time pressure.** No countdown timers, no stage that can be failed by being slow.

@@ -39,9 +39,11 @@ Hold the iPad sideways.
     genuinely come apart rather than a line being drawn over the top.
   - **Serve** – give one to each of the townsfolk, which is one-to-one correspondence with a
     reason to care. The line-up is shuffled each time and nobody turns up twice.
-- **Ten-frames** – a tally of two fixed frames of ten sits beside the numeral. Items fill the first
-  frame, and the second only appears once the first is full, so 13 reads as *a full tray and 3 more*.
-  The frames are always ten slots, never the target, so the frame can't hand over the answer.
+- **The recipe card and the trays** – the number she has to read sits on a paper card pinned up
+  with the recipe's colour across the top. Beside it, the tally is a muffin tray of ten wells that
+  fill as she places. A second tray slides in only once the first is full, so 13 reads as *a full
+  tray and 3 more* — literally. Each tray is always ten wells, never the target, so it can't hand
+  over the answer.
 - **Served** – the dish is finished, the next recipe opens.
 - **The café** – everything she has cooked sits on the counter, with the townsfolk waiting
   alongside it. One more of them turns up for each recipe she has learned. Tap anyone to hear
