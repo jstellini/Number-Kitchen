@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<!-- Review page for the whole cast at once. Open it via serve.ps1 after running
+     `python tools/build_cast.py`. -->
+<html lang="en-AU"><head><meta charset="utf-8"><title>Cast sheet</title>
+<style>
+  body { margin:0; background:#fff6e6; font-family:'Fredoka',system-ui,sans-serif; color:#3b2b20; }
+  h1 { text-align:center; padding:18px 0 0; margin:0; }
+  p.note { text-align:center; margin:4px 0 18px; opacity:.6; font-size:14px; }
+  .sheet { display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:18px; padding:0 20px 40px; }
+  figure { margin:0; background:#fff; border-radius:20px; padding:14px; text-align:center; box-shadow:0 6px 0 rgba(0,0,0,.12); }
+  img { width:100%; height:auto; display:block; }
+  figcaption { font-weight:700; margin-top:6px; }
+</style></head><body>
+<h1>Number Kitchen — the townsfolk</h1>
+<p class="note">Regenerate with <code>python tools/build_cast.py</code></p>
+<div class="sheet" id="sheet"></div>
+<script>
+  const CAST = ['pip','bea','ollie','mimi','gus','nell','rory','tilly'];
+  document.getElementById('sheet').innerHTML = CAST.map(n =>
+    `<figure><img src="../assets/cast/${n}.svg" alt="${n}"><figcaption>${n}</figcaption></figure>`).join('');
+</script>
+</body></html>

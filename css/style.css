@@ -243,25 +243,29 @@ html, body {
 .cutting.shake { animation: shake .25s ease; }
 @keyframes shake { 30% { transform: translateX(-50%) rotate(-1.5deg); } 70% { transform: translateX(-50%) rotate(1.5deg); } }
 
-/* match-1to1 */
+/* match-1to1 — the townsfolk from tools/build_cast.py, as <img> so Safari
+   rasterises each one once however many are on stage. */
 .match .guests {
-  position: absolute; inset: 0 0 26% 0;
-  display: flex; flex-wrap: wrap; gap: clamp(10px, 2.4vw, 26px);
+  position: absolute; inset: 0 0 24% 0;
+  display: flex; flex-wrap: wrap; gap: clamp(4px, 1.4vw, 18px);
   align-content: center; justify-content: center;
 }
 .guest {
-  display: flex; flex-direction: column; align-items: center; gap: 2px;
-  cursor: pointer; padding: 6px; border-radius: 18px;
+  display: flex; flex-direction: column; align-items: center;
+  cursor: pointer; padding: 4px; border-radius: 18px;
 }
-.guest .face { width: clamp(56px, 8vw, 96px); display: block; }
-.guest .face svg { width: 100%; height: auto; display: block; }
-.guest .name { font-size: 14px; font-weight: 600; opacity: .7; }
+.guest .who { width: clamp(62px, 9vw, 116px); display: block; }
+/* The art is a 200x240 box, so the aspect ratio is fixed here and the image never
+   reflows the row while it loads. */
+.guest .who img { width: 100%; aspect-ratio: 200 / 240; height: auto; display: block; }
+.guest .name { font-size: clamp(12px, 1.5vw, 16px); font-weight: 700; opacity: .75; }
 .guest .plate {
-  width: clamp(34px, 5vw, 54px); height: clamp(34px, 5vw, 54px);
+  width: clamp(30px, 4.2vw, 50px); height: clamp(30px, 4.2vw, 50px);
+  margin-top: -6px;
   border-radius: 50%; background: #fff; box-shadow: var(--shadow);
   display: grid; place-items: center;
 }
-.guest .plate svg { width: 80%; height: 80%; }
+.guest .plate svg { width: 78%; height: 78%; }
 .guest.fed { animation: pulse .4s ease; }
 .guest.fed .name::after { content: ' 😋'; }
 
@@ -299,6 +303,14 @@ html, body {
 .d-name { font-size: clamp(16px, 2.2vw, 21px); font-weight: 700; }
 .d-count { font-size: 14px; opacity: .6; }
 .cafe-empty { text-align: center; font-family: 'Andika', sans-serif; opacity: .6; padding: 0 30px; }
+/* The townsfolk along the counter. They make the café a room rather than a shelf. */
+.cafe-folk {
+  display: flex; flex-wrap: wrap; gap: clamp(2px, 1.2vw, 16px);
+  justify-content: center; align-items: flex-end; padding: 0 18px 18px;
+}
+.cafe-folk button { border: 0; background: none; padding: 0; cursor: pointer; width: clamp(62px, 8.5vw, 110px); }
+.cafe-folk img { width: 100%; aspect-ratio: 200 / 240; height: auto; display: block; }
+.cafe-folk button:nth-child(2n) { transform: translateY(6px); }
 .hidden { display: none !important; }
 
 /* ---------- grown-ups ---------- */

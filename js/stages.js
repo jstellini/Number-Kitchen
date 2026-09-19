@@ -326,15 +326,14 @@ const Stage = (() => {
     const c = chrome(spec);
     const root = area();
     root.className = 'stage-area match';
-    const guests = Array.from({ length: spec.n }, (_, i) => CAST[i % CAST.length]);
+    // A different line-up each time, and nobody twice while the cast can cover it.
+    const pool = CAST.slice();
+    for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+    const guests = Array.from({ length: spec.n }, (_, i) => pool[i % pool.length]);
     root.innerHTML = `
       <div class="guests">${guests.map((g, i) => `
         <div class="guest" data-i="${i}" style="--c:${g.color}">
-          <span class="face"><svg viewBox="0 0 100 100">
-            <circle cx="50" cy="54" r="34" fill="${g.color}"/>
-            <circle cx="39" cy="48" r="5" fill="#2b2b2b"/><circle cx="61" cy="48" r="5" fill="#2b2b2b"/>
-            <path d="M38 66 q12 10 24 0" stroke="#2b2b2b" stroke-width="4" fill="none" stroke-linecap="round"/>
-          </svg></span>
+          <span class="who"><img src="${g.img}" alt="${g.name}" draggable="false"></span>
           <span class="plate"></span>
           <span class="name">${g.name}</span>
         </div>`).join('')}</div>
@@ -346,6 +345,7 @@ const Stage = (() => {
     const started = performance.now();
 
     function serve(seat, at) {
+      // Serving someone twice isn't an error, it just doesn't feed anyone new.
       if (!running || seat.classList.contains('fed')) { if (running) slips++; return; }
       seat.classList.add('fed');
       seat.querySelector('.plate').innerHTML = itemSvg(spec.item);

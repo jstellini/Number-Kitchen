@@ -35,7 +35,9 @@ WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight",
          "sixteen", "seventeen", "eighteen", "nineteen", "twenty"]
 
 RECIPE_RE = re.compile(r"^\s*id:\s*'(\w+)',\s*name:\s*'([^']+)'")
-STAGE_RE = re.compile(r"\{\s*id:\s*'(\w+)',\s*primitive:\s*'([\w-]+)'.*?say:\s*'([^']*)'")
+JS_STR = r"((?:[^'\\]|\\.)*)"   # a single-quoted JS string body, escapes included
+CAST_RE = re.compile(r"\{\s*id:\s*'(\w+)',\s*name:\s*'" + JS_STR + r"',\s*color:\s*'[^']*',\s*job:\s*'" + JS_STR + r"'")
+STAGE_RE = re.compile(r"\{\s*id:\s*'(\w+)',\s*primitive:\s*'([\w-]+)'.*?say:\s*'" + JS_STR + r"'")
 LIMIT_RE = re.compile(r"'([\w-]+)':\s*\{\s*min:\s*(\d+),\s*max:\s*(\d+)\s*\}")
 
 
@@ -44,6 +46,19 @@ def load_limits():
     text = STAGES_JS.read_text(encoding="utf-8")
     block = text.split("const LIMITS = {", 1)[1].split("};", 1)[0]
     return {m[0]: (int(m[1]), int(m[2])) for m in LIMIT_RE.findall(block)}
+
+
+def unescape(s):
+    """Turn a JS string body back into plain text (\\' -> ')."""
+    return re.sub(r"\\(.)", r"\1", s)
+
+
+def load_cast():
+    """The townsfolk (CAST in js/data.js), for the lines the café speaks."""
+    text = DATA_JS.read_text(encoding="utf-8")
+    block = text.split("const CAST = [", 1)[1].split("\n];", 1)[0]
+    return [{"id": m[0], "name": unescape(m[1]), "job": unescape(m[2])}
+            for m in CAST_RE.findall(block)]
 
 
 def load_recipes():
@@ -59,7 +74,7 @@ def load_recipes():
             continue
         m = STAGE_RE.search(line)
         if m and cur:
-            cur["stages"].append({"id": m.group(1), "primitive": m.group(2), "say": m.group(3)})
+            cur["stages"].append({"id": m.group(1), "primitive": m.group(2), "say": unescape(m.group(3))})
     if not recipes:
         print("warning: parsed no recipes from js/data.js", file=sys.stderr)
     return recipes
@@ -90,6 +105,10 @@ def build_lines():
     for i, r in enumerate(recipes):
         if i:
             lines[f"locked-{r['id']}"] = f"Cook the {recipes[i - 1]['name']} first!"
+
+    # Tapping someone in the café introduces them.
+    for c in load_cast():
+        lines[f"who-{c['id']}"] = f"{c['name']}, {c['job']}!"
 
     lines["welcome"] = "Welcome to Number Kitchen! Pick a recipe!"
     return lines

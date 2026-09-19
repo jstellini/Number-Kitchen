@@ -148,6 +148,18 @@ const App = (() => {
       replayOn(b, 'wobble');
       Voice.say(made[i].name, { key: `dish-${made[i].id}` });
     }));
+
+    // The townsfolk waiting at the counter. One more joins for each dish she has
+    // learned to cook, so the room fills up as the recipe book does.
+    const folk = $('#cafe-folk');
+    const here = CAST.slice(0, Math.min(CAST.length, 3 + made.length));
+    folk.innerHTML = here.map(c => `
+      <button aria-label="${c.name}"><img src="${c.img}" alt="${c.name}" draggable="false"></button>`).join('');
+    Array.from(folk.children).forEach((b, i) => tap(b, () => {
+      Sfx.giggle();
+      replayOn(b, 'wobble');
+      Voice.say(`${here[i].name}, ${here[i].job}!`, { key: `who-${here[i].id}` });
+    }));
     Sfx.bell();
   }
 
@@ -228,6 +240,9 @@ const App = (() => {
       // bottom of the viewport, which is exactly where the ingredient shelf goes.
       $('#a2hs-note').classList.add('hidden');
       show('book');
+      // Decode the cast now, while she is reading the recipe book, so nobody pops
+      // in halfway through a serve stage.
+      CAST.forEach(c => { const i = new Image(); i.src = c.img; });
       setTimeout(() => Voice.say("Welcome to Number Kitchen! Pick a recipe!", { key: 'welcome' }), 300);
     });
     $$('[data-go]').forEach(b => tap(b, () => { Sfx.tap(); show(b.dataset.go); }));

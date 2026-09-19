@@ -63,13 +63,14 @@ These come from the brief and exist for the player, not for tidiness.
 ```
 index.html            screens + iOS boilerplate (viewport, double-tap-zoom guard)
 css/style.css         all styling and animations
-js/data.js            digit strokes, ingredient SVG, recipe definitions
+js/data.js            digit strokes, ingredient SVG, recipe definitions, the cast
 js/audio.js           Web Audio sound effects + voice playback (clips, TTS fallback)
 js/voice-manifest.js  key → mp3 lookup (auto-generated, do not hand-edit)
 js/fx.js              sparkle / confetti particles
 js/range.js           per-numeral mastery model — decides which number a stage asks for
 js/stages.js          the interaction primitives
 js/app.js             screen flow, progress, recipe runner, grown-ups panel
+tools/build_cast.py      regenerates assets/cast/*.svg (the townsfolk)
 tools/generate_voice.py  regenerates assets/voice/ + js/voice-manifest.js
 ```
 
@@ -82,6 +83,12 @@ primitive plus its art. No new code if it composes existing primitives. Then
 **A primitive** — one function in `js/stages.js` returning `{ stop() }`, plus an entry in the
 `PRIMITIVES` registry at the top. It receives `(spec, onDone)` where `spec.n` is the target
 number the range model chose.
+
+**A townsperson** — one entry in `CAST` at the bottom of `tools/build_cast.py`, composed from the
+shared kit (hair, hat and outfit are all enumerated `kind` strings), plus one entry in `CAST` in
+`js/data.js`. They are drawn as `<img>`, not inline SVG: Safari rasterises each file once and
+reuses it, which is what makes six on a stage affordable. Inlining eight of them instead would
+put ~30 nodes each into the live DOM.
 
 **Voice** — every spoken line is a pre-generated mp3 (Microsoft Edge neural TTS,
 `en-GB-SoniaNeural`) looked up by key in `js/voice-manifest.js`. Browser TTS is the fallback when
