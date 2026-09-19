@@ -112,6 +112,16 @@ itself to the count, so two scoops read as two big scoops and twenty as a full b
 made every amount look like a few small things rattling around, and a square grid of twenty
 spilled straight out of a bowl, which narrows towards the bottom.
 
+**Shading** — every form gets a radial gradient lit from the upper left, an outline tinted from
+its own colour (`ink_of`) rather than one flat near-black over everything, and a soft contact
+shadow from the `GROUND` table so it sits on a surface. This lives in `sh`/`circ`/`ell` in
+`tools/build_art.py`, so a new drawing gets it for free — use `well()` for a recess (a tray cup;
+the default gradient would turn a hole into a bump) and `slab()` for a flat panel (an oven's glow,
+a jug of liquid). Contact shadows are gradients, never blur filters: a filter is the one thing the
+iPad hates. None of it costs anything at runtime — an `<img>` is rasterised once and a vessel is
+drawn once per stage. Vessel ids are namespaced per vessel, or their gradients would collide when
+more than one is on a page.
+
 **Art** — two kinds, and picking the wrong one costs performance. Anything that *repeats* (an
 ingredient, a portion, a utensil, an icon) is a file in `assets/art/` used as `<img>`, so Safari
 rasterises it once and reuses it for all twenty copies. Anything whose *insides move* (a bowl, an

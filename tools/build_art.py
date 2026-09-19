@@ -1,10 +1,6 @@
 """Builds every piece of food, utensil and recipe icon into assets/art/, and the
 animatable vessels into js/vessels.js.
 
-The cast (tools/build_cast.py) is drawn with a heavy ink outline, flat fills and a
-single highlight. The food was not, which is why the two never looked like they came
-from the same game. Everything here uses that same language.
-
 Two output shapes, for two different jobs:
 
   assets/art/*.svg  Ingredients, finished portions, utensils and recipe icons.
@@ -15,11 +11,21 @@ Two output shapes, for two different jobs:
                     which an <img> cannot do, so they are inlined with their parts
                     tagged. Only ever one on screen at a time.
 
+SHADING. The first pass drew everything as a flat fill plus one white ellipse, which
+read as cheap next to the competition. The drawing kit below now gives every form a
+radial gradient (lit from the upper left), an outline tinted from the form's own
+colour rather than one flat near-black, and a soft contact shadow so it sits on a
+surface instead of hovering over one. None of this costs anything at runtime: an
+<img> is rasterised once by Safari and reused, and a vessel is drawn once per stage.
+It is applied in `sh`/`circ`/`ell`, so the drawings themselves did not change — the
+language they are written in did.
+
 Re-run after editing:
 
     python tools/build_art.py
 """
 import json
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -31,25 +37,112 @@ W = 3.6          # outline weight on a 100 box, matched by eye to the cast's at 
 WV = 3.0         # ... and on a vessel's 200x140 box
 
 
-# ---------------------------------------------------------------- drawing kit
+# ---------------------------------------------------------------- colour
 
-def sh(d, fill, w=W, op=None, cls=None):
+def _h2r(h):
+    h = h.lstrip("#")
+    if len(h) == 3:                      # #fff and friends
+        h = "".join(c * 2 for c in h)
+    return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
+
+
+def _r2h(t):
+    return "#%02x%02x%02x" % tuple(max(0, min(255, int(round(v)))) for v in t)
+
+
+def lighten(h, a):
+    r, g, b = _h2r(h)
+    return _r2h((r + (255 - r) * a, g + (255 - g) * a, b + (255 - b) * a))
+
+
+def darken(h, a):
+    r, g, b = _h2r(h)
+    return _r2h((r * (1 - a), g * (1 - a), b * (1 - a)))
+
+
+def mix(h1, h2, a):
+    r1, g1, b1 = _h2r(h1)
+    r2, g2, b2 = _h2r(h2)
+    return _r2h((r1 + (r2 - r1) * a, g1 + (g2 - g1) * a, b1 + (b2 - b1) * a))
+
+
+def ink_of(h):
+    """An outline tinted from the form's own colour. One flat near-black over
+    everything is what made the food look printed rather than lit."""
+    return mix(darken(h, 0.76), INK, 0.35)
+
+
+# ---------------------------------------------------------------- drawing kit
+# Gradients are collected per file and flushed into <defs> by svg100 / svg200.
+
+_DEFS = []
+
+
+def _grad(base):
+    """Register a radial gradient for `base`, lit from the upper left, and return the
+    url() that references it."""
+    gid = "g%d" % len(_DEFS)
+    _DEFS.append(
+        f'<radialGradient id="{gid}" cx="34%" cy="26%" r="84%">'
+        f'<stop offset="0" stop-color="{lighten(base, 0.26)}"/>'
+        f'<stop offset=".52" stop-color="{base}"/>'
+        f'<stop offset="1" stop-color="{darken(base, 0.21)}"/></radialGradient>')
+    return f"url(#{gid})"
+
+
+def _paint(fill):
+    """(paint, stroke) for a fill. Anything already a url() or `none` passes through."""
+    if not isinstance(fill, str) or fill.startswith("url(") or fill in ("none", ""):
+        return fill, INK
+    return _grad(fill), ink_of(fill)
+
+
+def well(base):
+    """A gradient that reads as a recess: dark at the top where the rim shades it.
+    The default radial lights the top-left, which turns a hole into a bump."""
+    gid = "w%d" % len(_DEFS)
+    _DEFS.append(
+        f'<linearGradient id="{gid}" x1="0" y1="0" x2="0" y2="1">'
+        f'<stop offset="0" stop-color="{darken(base, 0.36)}"/>'
+        f'<stop offset=".62" stop-color="{base}"/>'
+        f'<stop offset="1" stop-color="{lighten(base, 0.12)}"/></linearGradient>')
+    return f"url(#{gid})"
+
+
+def slab(base, down=True):
+    """A straight gradient for a flat panel — an oven's glow, a jug of liquid."""
+    gid = "l%d" % len(_DEFS)
+    x2, y2 = ("0", "1") if down else ("1", "0")
+    _DEFS.append(
+        f'<linearGradient id="{gid}" x1="0" y1="0" x2="{x2}" y2="{y2}">'
+        f'<stop offset="0" stop-color="{lighten(base, 0.24)}"/>'
+        f'<stop offset=".55" stop-color="{base}"/>'
+        f'<stop offset="1" stop-color="{darken(base, 0.24)}"/></linearGradient>')
+    return f"url(#{gid})"
+
+
+def sh(d, fill, w=W, op=None, cls=None, ink=None):
+    paint, stroke = _paint(fill)
+    stroke = ink or stroke
     o = f' opacity="{op}"' if op is not None else ""
     c = f' class="{cls}"' if cls else ""
-    return (f'<path{c} d="{d}" fill="{fill}" stroke="{INK}" stroke-width="{w}" '
+    return (f'<path{c} d="{d}" fill="{paint}" stroke="{stroke}" stroke-width="{w}" '
             f'stroke-linejoin="round" stroke-linecap="round"{o}/>')
 
 
 def flat(d, fill, op=None, cls=None):
-    """A shape with no outline — shading and detail that sits inside an outlined form."""
+    """A shape with no outline — shading and detail inside an outlined form."""
     o = f' opacity="{op}"' if op is not None else ""
     c = f' class="{cls}"' if cls else ""
     return f'<path{c} d="{d}" fill="{fill}"{o}/>'
 
 
-def circ(cx, cy, r, fill, w=W, cls=None):
+def circ(cx, cy, r, fill, w=W, cls=None, ink=None):
+    paint, stroke = _paint(fill)
+    stroke = ink or stroke
     c = f' class="{cls}"' if cls else ""
-    return f'<circle{c} cx="{cx}" cy="{cy}" r="{r}" fill="{fill}" stroke="{INK}" stroke-width="{w}"/>'
+    return (f'<circle{c} cx="{cx}" cy="{cy}" r="{r}" fill="{paint}" '
+            f'stroke="{stroke}" stroke-width="{w}"/>')
 
 
 def dot(cx, cy, r, fill, op=None):
@@ -57,9 +150,12 @@ def dot(cx, cy, r, fill, op=None):
     return f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="{fill}"{o}/>'
 
 
-def ell(cx, cy, rx, ry, fill, w=W, cls=None):
+def ell(cx, cy, rx, ry, fill, w=W, cls=None, ink=None):
+    paint, stroke = _paint(fill)
+    stroke = ink or stroke
     c = f' class="{cls}"' if cls else ""
-    return f'<ellipse{c} cx="{cx}" cy="{cy}" rx="{rx}" ry="{ry}" fill="{fill}" stroke="{INK}" stroke-width="{w}"/>'
+    return (f'<ellipse{c} cx="{cx}" cy="{cy}" rx="{rx}" ry="{ry}" fill="{paint}" '
+            f'stroke="{stroke}" stroke-width="{w}"/>')
 
 
 def flat_ell(cx, cy, rx, ry, fill, op=None, rot=0):
@@ -69,8 +165,20 @@ def flat_ell(cx, cy, rx, ry, fill, op=None, rot=0):
 
 
 def shine(cx, cy, rx=9, ry=5, rot=-35, op=.5):
-    """The single white highlight every solid form gets, so they read as one set."""
+    """The specular highlight every solid form gets, so they read as one set."""
     return flat_ell(cx, cy, rx, ry, "#fff", op, rot)
+
+
+def contact(cx, cy, rx, ry, op=.26):
+    """A soft cast shadow, so the thing sits on the surface rather than over it.
+    A gradient rather than a blur filter: filters are the one thing the iPad hates."""
+    gid = "s%d" % len(_DEFS)
+    _DEFS.append(
+        f'<radialGradient id="{gid}">'
+        f'<stop offset="0" stop-color="#000" stop-opacity="{op}"/>'
+        f'<stop offset=".62" stop-color="#000" stop-opacity="{op * 0.5:.3f}"/>'
+        f'<stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>')
+    return f'<ellipse cx="{cx}" cy="{cy}" rx="{rx}" ry="{ry}" fill="url(#{gid})"/>'
 
 
 def part(cls, inner, ox=None, oy=None):
@@ -78,8 +186,18 @@ def part(cls, inner, ox=None, oy=None):
     return f'<g class="{cls}"{style}>{inner}</g>'
 
 
+def _flush():
+    d = "".join(_DEFS)
+    _DEFS.clear()
+    return f"<defs>{d}</defs>" if d else ""
+
+
 def svg100(body):
-    return f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">{body}</svg>'
+    return f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">{_flush()}{body}</svg>'
+
+
+def svg200(body):
+    return f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 140">{_flush()}{body}</svg>'
 
 
 # ---------------------------------------------------------------- ingredients
@@ -443,8 +561,8 @@ def v_bowl():
 
 def v_dough():
     return (part("v-blob",
-                 ell(100, 74, 84, 50, "#f0d9a8", WV)
-                 + flat_ell(100, 70, 70, 38, "#f9ebcd")
+                 ell(100, 74, 84, 50, "#e6ca90", WV)
+                 + flat_ell(100, 70, 70, 38, "#f5e3bd")
                  + flat_ell(66, 54, 18, 9, "#fff", .45, -25),
                  100, 74))
 
@@ -461,7 +579,8 @@ def v_pizza():
 def v_oven():
     return (sh("M12 8 L188 8 A14 14 0 0 1 188 132 L12 132 A14 14 0 0 1 12 8 Z", "#96a1ad", WV)
             + sh("M30 34 L170 34 A10 10 0 0 1 170 118 L30 118 A10 10 0 0 1 30 34 Z", "#33414f", WV)
-            + part("v-glow", flat("M40 42 L160 42 A8 8 0 0 1 160 110 L40 110 A8 8 0 0 1 40 42 Z", "#ffb34d"), 100, 76)
+            + part("v-glow", flat("M40 42 L160 42 A8 8 0 0 1 160 110 L40 110 A8 8 0 0 1 40 42 Z",
+                                slab("#ff9c2e", down=False)), 100, 76)
             # A pizza on a tray, seen from a low angle. Drawn as flat ellipses: an
             # upright dome read as a red archway.
             + part("v-food",
@@ -484,7 +603,8 @@ def v_blender():
             # The liquid lives INSIDE v-contents so the stylesheet can churn it while
             # the blender runs. An empty group here was the reason it never moved.
             + part("v-contents",
-                   flat("M62 46 L138 46 L130 98 A10 10 0 0 1 120 106 L80 106 A10 10 0 0 1 70 98 Z", "#c77ce8", .95)
+                   flat("M62 46 L138 46 L130 98 A10 10 0 0 1 120 106 L80 106 A10 10 0 0 1 70 98 Z",
+                        slab("#c77ce8"), .95)
                    + flat("M68 52 L132 52 L130 62 L70 62 Z", "#dba6f0", .8),
                    100, 76)
             + flat("M64 12 L72 12 L66 96 L60 96 Z", "#fff", .4)
@@ -500,7 +620,8 @@ def v_plate():
 
 
 def v_tray():
-    cups = "".join(circ(24.8 + 37.6 * i, 44 + 52 * j, 16, "#7c8894", WV)
+    cups = "".join(circ(24.8 + 37.6 * i, 44 + 52 * j, 16, well("#7c8894"), WV,
+                        ink=ink_of("#7c8894"))
                    for j in range(2) for i in range(5))
     return (sh("M6 18 L194 18 A12 12 0 0 1 194 122 L6 122 A12 12 0 0 1 6 18 Z", "#9aa5b1", WV)
             + cups)
@@ -519,16 +640,40 @@ VESSELS = {
 }
 
 
+# Where each item touches the surface: cx, cy, rx, ry for its contact shadow, or
+# None for things that are not sitting on anything (a leaf, a sprinkle).
+GROUND = {
+    "scoop": (50, 93, 25, 5), "egg": (50, 84, 32, 5), "pepperoni": (50, 83, 27, 5),
+    "cherry": (46, 92, 22, 5), "case": (50, 91, 20, 4), "bread": (50, 89, 26, 5),
+    "ham": (50, 73, 30, 5), "strawberry": (50, 93, 24, 5), "berry": (50, 84, 23, 5),
+    "cup": (50, 96, 21, 4), "slice": (50, 93, 32, 5), "cupcake": (50, 92, 20, 4),
+    "sandwich": (50, 77, 32, 5), "pancake": (50, 81, 31, 5), "tomato": (50, 89, 27, 5),
+    "cheese": (50, 73, 30, 5), "mushroom": (50, 82, 20, 5), "olive": (50, 82, 21, 5),
+    "butter": (50, 76, 26, 5), "banana": (50, 86, 30, 5), "lettuce": (50, 90, 34, 5),
+    "basil": None, "sprinkle": None,
+}
+
+
+def namespace_ids(key, text):
+    """Prefix every id, so the eight vessels can share one page without their
+    gradients clashing."""
+    text = re.sub(r'\bid="([^"]+)"', lambda m: f'id="{key}-{m.group(1)}"', text)
+    return re.sub(r"url\(#([^)]+)\)", lambda m: f"url(#{key}-{m.group(1)})", text)
+
+
 def main():
     ART.mkdir(parents=True, exist_ok=True)
     for name, fn in ITEMS.items():
-        (ART / f"{name}.svg").write_text(svg100(fn()), encoding="utf-8")
+        g = GROUND.get(name, (50, 92, 26, 5))
+        body = fn()
+        # The shadow is registered after the item's own gradients but drawn behind it.
+        shadow = contact(*g) if g else ""
+        (ART / f"{name}.svg").write_text(svg100(shadow + body), encoding="utf-8")
     for name, fn in WHOLE.items():
         (ART / f"{name}.svg").write_text(fn(), encoding="utf-8")
     print(f"  {len(ITEMS) + len(WHOLE)} files in assets/art/")
 
-    built = {k: f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 140">{fn()}</svg>'
-             for k, fn in VESSELS.items()}
+    built = {k: namespace_ids(k, svg200(fn())) for k, fn in VESSELS.items()}
     body = "\n".join(f"  {json.dumps(k)}: {json.dumps(v)}," for k, v in built.items())
     VESSELS_JS.write_text(
         "// Vessels, appliances and their animatable parts.\n"
