@@ -38,7 +38,13 @@
   <section id="screen-start" class="screen active">
     <div class="start-inner">
       <h1 class="logo"><span class="n">Number</span> <span class="k">Kitchen</span></h1>
-      <div class="start-parade"><span>🍕</span><span>🧁</span><span>🥪</span><span>🥤</span><span>🥞</span></div>
+      <div class="start-parade">
+        <img src="assets/art/icon-pizza.svg" alt="" draggable="false">
+        <img src="assets/art/icon-cupcakes.svg" alt="" draggable="false">
+        <img src="assets/art/icon-sandwich.svg" alt="" draggable="false">
+        <img src="assets/art/icon-smoothie.svg" alt="" draggable="false">
+        <img src="assets/art/icon-pancakes.svg" alt="" draggable="false">
+      </div>
       <button id="btn-start" class="big-btn">Let's cook!</button>
     </div>
   </section>
@@ -47,7 +53,7 @@
   <section id="screen-book" class="screen">
     <header class="bar">
       <h2>Recipe Book</h2>
-      <button class="chip" data-go="cafe">☕ Café <b id="cafe-count">0</b></button>
+      <button class="chip" data-go="cafe"><img src="assets/art/icon-cafe.svg" alt="" draggable="false"> Café <b id="cafe-count">0</b></button>
     </header>
     <div id="recipe-grid" class="recipe-grid"></div>
   </section>
@@ -147,6 +153,7 @@
 </div>
 
 <script src="js/data.js"></script>
+<script src="js/vessels.js"></script>
 <script src="js/voice-manifest.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/fx.js"></script>

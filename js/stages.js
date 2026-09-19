@@ -4,17 +4,23 @@
 // `spec.n` from js/range.js. Adding a primitive is one function returning { stop() }
 // plus an entry in PRIMITIVES.
 //
+// Art comes from two places (see tools/build_art.py): anything that repeats is an
+// <img> out of assets/art/, so twenty of them cost one rasterisation; vessels are
+// inlined from js/vessels.js so their parts can be animated from the stylesheet.
+//
 // House rules every primitive obeys (see docs/BRIEF.md):
 //   * no fail state, no error sound — overshooting is allowed and always reversible
 //   * the target numeral stays on screen for the whole stage
 //   * ten-frames are fixed at 10 slots, so the frame never gives the answer away;
 //     a second frame slides in only once the first is full
+//   * animate transform and opacity only — see CLAUDE.md
 
 const Stage = (() => {
   let active = null;
 
   const $ = s => document.querySelector(s);
   const area = () => $('#stage-area');
+  const SVG_NS = 'http://www.w3.org/2000/svg';
 
   function el(tag, cls, html) {
     const n = document.createElement(tag);
@@ -22,23 +28,21 @@ const Stage = (() => {
     if (html != null) n.innerHTML = html;
     return n;
   }
-  const itemSvg = id => `<svg viewBox="0 0 100 100" aria-hidden="true">${ART[id] || ''}</svg>`;
-  const dishSvg = id => `<svg viewBox="0 0 200 140" aria-hidden="true">${DISH_ART[id] || ''}</svg>`;
-  const centre = e => { const r = e.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; };
+  const itemImg = id => `<img class="art" src="${artUrl(id)}" alt="" draggable="false">`;
+  const vesselSvg = id => VESSELS[id] || '';
+  const replay = (node, cls) => { if (node) { node.classList.remove(cls); void node.offsetWidth; node.classList.add(cls); } };
 
   // ---------- shared chrome ----------
-  // Prompt, the target numeral card, and the ten-frame tally. Returns the handles a
-  // primitive needs to drive them.
   function chrome(spec) {
     const n = spec.n;
     $('#stage-prompt').textContent = (spec.say || '').replace('{n}', n);
     const card = $('#stage-target');
     card.textContent = n;
     card.classList.toggle('two', String(n).length > 1);
-    card.classList.remove('pulse'); void card.offsetWidth; card.classList.add('pulse');
+    replay(card, 'pulse');
 
-    // Two frames of ten. The second is built but hidden; it slides in when the
-    // first fills, which is what makes 13 read as "a full tray and 3 more".
+    // Two frames of ten. The second is built but hidden; it slides in when the first
+    // fills, which is what makes 13 read as "a full tray and 3 more".
     const wrap = $('#stage-frames');
     wrap.innerHTML = '';
     const frames = [0, 1].map(f => {
@@ -50,12 +54,10 @@ const Stage = (() => {
     const dots = frames.flatMap(f => Array.from(f.children));
 
     return {
-      // Fill the tally to `k` and reveal the second frame once the first is full.
       tally(k) {
         dots.forEach((d, i) => d.classList.toggle('on', i < k));
         wrap.classList.toggle('wide', k >= 10 || n > 10);
       },
-      // The count-along: a number spoken, a rung of the scale, a sparkle.
       countUp(k, at) {
         Voice.count(k);
         Sfx.rise(k - 1);
@@ -111,6 +113,15 @@ const Stage = (() => {
 
   const inside = (rect, x, y) => x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
 
+  // A swipe or a poke on the vessel, whichever she manages. Deliberately forgiving:
+  // the number is the point, not the motor precision.
+  function onStroke(node, fn) {
+    let down = false;
+    node.addEventListener('pointerdown', e => { if (!e.button) { e.preventDefault(); down = true; } });
+    node.addEventListener('pointerup', e => { if (down) { down = false; fn(e.clientX, e.clientY); } });
+    node.addEventListener('pointercancel', () => { down = false; });
+  }
+
   // ---------- count-place ----------
   // Read the numeral, put that many things in the vessel. The spine of the game:
   // the only primitive that trains "see numeral → know quantity" inside the cooking
@@ -122,30 +133,35 @@ const Stage = (() => {
     // .v-* rules in style.css) — geometry belongs with the art, not here.
     root.className = 'stage-area count-place v-' + spec.vessel;
     root.innerHTML = `
-      <div class="vessel">${dishSvg(spec.vessel)}<div class="drop"></div></div>
+      <div class="vessel">${vesselSvg(spec.vessel)}<div class="drop"></div></div>
       <div class="supply"></div>`;
 
+    const vessel = root.querySelector('.vessel');
     const drop = root.querySelector('.drop');
     const supply = root.querySelector('.supply');
     let placed = [], slips = 0, running = true;
     const started = performance.now();
 
-    // The drop zone is a five-column grid, mirroring a ten-frame row. Items are
-    // plain children, so removing one reflows the rest for free and there is no
-    // per-item positioning to get wrong. (Percentages in a `transform` resolve
-    // against the element's own box, not its container — which is exactly the trap
-    // this replaced.)
     function add(at) {
       if (!running) return;
-      const node = el('button', 'item placed', itemSvg(spec.item));
+      const node = el('button', 'item placed', itemImg(spec.item));
       node.setAttribute('aria-label', 'remove');
+      // Fly in from roughly where her finger was, so the item goes where she put it
+      // rather than fading in from nowhere. One layout read per placement, never in
+      // a frame loop.
       drop.appendChild(node);
+      if (at) {
+        const r = node.getBoundingClientRect();
+        node.style.setProperty('--fx', Math.round(at.x - (r.left + r.width / 2)) + 'px');
+        node.style.setProperty('--fy', Math.round(at.y - (r.top + r.height / 2)) + 'px');
+      }
       placed.push(node);
       c.tally(placed.length);
       c.countUp(placed.length, at);
       Sfx.plop();
-      // Overshooting is allowed — the counter simply reads high against the target.
+      replay(vessel, 'bump');
       if (placed.length > spec.n) slips++;
+
       // Taking one back out is always available, and never punished.
       node.addEventListener('pointerdown', ev => {
         if (!running) return;
@@ -165,7 +181,7 @@ const Stage = (() => {
 
     // A small shelf of the ingredient. Tapping one or dragging it in both work.
     for (let i = 0; i < 4; i++) {
-      const src = el('button', 'item supply-item', itemSvg(spec.item));
+      const src = el('button', 'item supply-item', itemImg(spec.item));
       draggable(src, { onDrop: ({ x, y, tapped }) => {
         if (tapped || inside(drop.getBoundingClientRect(), x, y)) add({ x, y });
       } });
@@ -177,20 +193,23 @@ const Stage = (() => {
   }
 
   // ---------- count-gesture ----------
-  // The recipe's hands-on action, counted as it happens. Any swipe or poke on the
-  // vessel counts — deliberately forgiving, since the number is the point, not the
-  // motor precision.
+  // The recipe's hands-on action, counted as it happens. The utensil is real art and
+  // actually travels — a rolling pin rolls across the dough and the dough spreads
+  // under it, a spoon goes round the bowl, a spatula tosses the pancake.
   function countGesture(spec, onDone) {
     const c = chrome(spec);
     const root = area();
-    root.className = 'stage-area count-gesture g-' + spec.gesture;
+    root.className = 'stage-area count-gesture g-' + spec.gesture + ' v-' + spec.vessel;
     root.innerHTML = `
-      <div class="vessel big">${dishSvg(spec.vessel)}<div class="tool"></div></div>
+      <div class="vessel big">${vesselSvg(spec.vessel)}
+        <img class="tool" src="${artUrl(spec.tool)}" alt="" draggable="false">
+      </div>
       <p class="hint">Swipe to ${spec.gesture}!</p>`;
 
     const vessel = root.querySelector('.vessel');
     const tool = root.querySelector('.tool');
-    let count = 0, slips = 0, running = true, down = null;
+    const blob = root.querySelector('.v-blob');
+    let count = 0, slips = 0, running = true;
     const started = performance.now();
     const SOUND = { roll: 'roll', stir: 'stir', whisk: 'whisk', spread: 'stir', flip: 'plop' };
 
@@ -200,15 +219,15 @@ const Stage = (() => {
       c.tally(count);
       c.countUp(count, { x, y });
       (Sfx[SOUND[spec.gesture]] || Sfx.plop)();
-      tool.classList.remove('go'); void tool.offsetWidth; tool.classList.add('go');
+      replay(tool, 'go');
+      replay(vessel, 'react');
+      // Dough actually spreads as it is rolled, so the work shows.
+      if (blob) blob.style.setProperty('--spread', (1 + Math.min(count, 10) * 0.022).toFixed(3));
       if (count > spec.n) slips++;
       if (count === spec.n) { running = false; finish(spec, slips, started, onDone); }
     }
 
-    vessel.addEventListener('pointerdown', e => { if (!e.button) { e.preventDefault(); down = { x: e.clientX, y: e.clientY }; } });
-    vessel.addEventListener('pointerup', e => { if (down) { stroke(e.clientX, e.clientY); down = null; } });
-    vessel.addEventListener('pointercancel', () => { down = null; });
-
+    onStroke(vessel, stroke);
     setTimeout(() => c.sayPrompt(), 300);
     return { stop() { running = false; } };
   }
@@ -222,7 +241,9 @@ const Stage = (() => {
     const root = area();
     root.className = 'stage-area set-dial d-' + spec.device;
     root.innerHTML = `
-      <div class="vessel big">${dishSvg(spec.device)}</div>
+      <div class="vessel big">${vesselSvg(spec.device)}
+        <span class="steam"><i></i><i></i><i></i></span>
+      </div>
       <div class="dial">
         <button class="knob down" aria-label="down">−</button>
         <div class="readout"><span>0</span></div>
@@ -240,20 +261,23 @@ const Stage = (() => {
       if (next === value) return;
       value = next;
       read.textContent = value;
-      read.classList.remove('bump'); void read.offsetWidth; read.classList.add('bump');
+      replay(read, 'bump');
       c.tally(value);
       Sfx.click();
       Voice.count(value);
+      // The appliance works harder the higher it is set, so the dial has a visible
+      // consequence rather than only a number changing.
+      root.style.setProperty('--heat', (value / MAXV).toFixed(2));
       clearTimeout(settle);
       if (value === spec.n) {
-        // A short settle so she sees the number land rather than the screen
-        // jumping out from under her finger.
+        // A short settle so she sees the number land rather than the screen jumping
+        // out from under her finger.
         settle = setTimeout(() => {
           if (!running) return;
           running = false;
           (spec.device === 'blender' ? Sfx.blender : Sfx.ding)();
           root.classList.add('running');
-          setTimeout(() => finish(spec, slips, started, onDone), 700);
+          setTimeout(() => finish(spec, slips, started, onDone), 900);
         }, 500);
       } else if (value > spec.n) slips++;
     }
@@ -267,61 +291,110 @@ const Stage = (() => {
 
   // ---------- cut-into ----------
   // Counts PIECES, not cuts: she watches the piece count, which is the number that
-  // matters. One whole thing is already one piece, so each swipe adds one.
+  // matters. One whole thing is already one piece, so each swipe adds one — and the
+  // pieces genuinely come apart rather than a line being drawn over the top.
+  const CRUST = '#e8c27a', SAUCE = '#d24a32', BREAD = '#e8b877', FILL = '#f7e4bd';
+  const INK = '#3a2e2e';
+
+  function wedgePaths(n, gap) {
+    // A round thing (pizza) split into n equal wedges, each nudged out along its
+    // own bisector so the cuts read as separation, not as drawn lines.
+    const cx = 100, cy = 70, r = 66;
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      const a0 = (i / n) * Math.PI * 2 - Math.PI / 2;
+      const a1 = ((i + 1) / n) * Math.PI * 2 - Math.PI / 2;
+      const bis = (a0 + a1) / 2;
+      const big = (a1 - a0) > Math.PI ? 1 : 0;
+      const p = (rr) => `M${cx},${cy} L${(cx + rr * Math.cos(a0)).toFixed(1)},${(cy + rr * Math.sin(a0)).toFixed(1)} `
+        + `A${rr},${rr} 0 ${big} 1 ${(cx + rr * Math.cos(a1)).toFixed(1)},${(cy + rr * Math.sin(a1)).toFixed(1)} Z`;
+      // Two pepperoni per wedge, along its own bisector, so a cut pizza still looks
+      // like the one she topped a moment ago.
+      const tops = [0.42, 0.66].map(f => ({
+        x: (cx + r * f * Math.cos(bis)).toFixed(1),
+        y: (cy + r * f * Math.sin(bis)).toFixed(1),
+      }));
+      out.push({ crust: p(r), sauce: p(r * 0.82), tops, dx: Math.cos(bis) * gap, dy: Math.sin(bis) * gap });
+    }
+    return out;
+  }
+
+  function stripPaths(n, gap) {
+    // A flat thing (sandwich) cut into n strips, spreading apart from the middle.
+    const x0 = 28, x1 = 172, y0 = 30, y1 = 112, w = (x1 - x0) / n;
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      const a = x0 + i * w, b = a + w;
+      const off = (i - (n - 1) / 2) * gap;
+      out.push({
+        crust: `M${a.toFixed(1)},${y0 + 10} Q${a.toFixed(1)},${y0} ${(a + 6).toFixed(1)},${y0} `
+             + `L${(b - 6).toFixed(1)},${y0} Q${b.toFixed(1)},${y0} ${b.toFixed(1)},${y0 + 10} `
+             + `L${b.toFixed(1)},${y1 - 6} Q${b.toFixed(1)},${y1} ${(b - 6).toFixed(1)},${y1} `
+             + `L${(a + 6).toFixed(1)},${y1} Q${a.toFixed(1)},${y1} ${a.toFixed(1)},${y1 - 6} Z`,
+        sauce: `M${(a + 3).toFixed(1)},${y0 + 22} L${(b - 3).toFixed(1)},${y0 + 22} `
+             + `L${(b - 3).toFixed(1)},${y0 + 44} L${(a + 3).toFixed(1)},${y0 + 44} Z`,
+        tops: [], dx: off, dy: 0,
+      });
+    }
+    return out;
+  }
+
   function cutInto(spec, onDone) {
     const c = chrome(spec);
     const root = area();
-    root.className = 'stage-area cut-into';
+    const strip = spec.shape === 'strip';
+    root.className = 'stage-area cut-into ' + (strip ? 'c-strip' : 'c-wedge');
     root.innerHTML = `
-      <div class="vessel big cutting">${dishSvg(spec.vessel)}<svg class="cuts" viewBox="0 0 200 140"></svg></div>
+      <div class="vessel big cutting">
+        ${strip ? vesselSvg('plate') : ''}
+        <svg class="pieces" viewBox="0 0 200 140" aria-hidden="true"></svg>
+        <img class="tool knife" src="${artUrl('knife')}" alt="" draggable="false">
+      </div>
       <p class="hint">Swipe to cut!</p>`;
 
     const vessel = root.querySelector('.vessel');
-    const cuts = root.querySelector('.cuts');
-    let pieces = 1, slips = 0, running = true, down = null;
+    const pieces = root.querySelector('.pieces');
+    const knife = root.querySelector('.knife');
+    let count = 1, slips = 0, running = true;
     const started = performance.now();
 
-    // Redraw as `pieces` equal wedges each time, so the cut always looks deliberate.
     function draw() {
-      cuts.innerHTML = '';
-      if (pieces < 2) return;
-      for (let i = 0; i < pieces; i++) {
-        const a = (i / pieces) * Math.PI * 2 - Math.PI / 2;
-        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        line.setAttribute('x1', 100); line.setAttribute('y1', 70);
-        line.setAttribute('x2', 100 + Math.cos(a) * 70);
-        line.setAttribute('y2', 70 + Math.sin(a) * 52);
-        line.setAttribute('class', 'cut');
-        cuts.appendChild(line);
-      }
+      // Gap opens up as there are more pieces, but never so far they stop reading as
+      // one dish.
+      const gap = count < 2 ? 0 : Math.min(5, 1.5 + count * 0.35);
+      const parts = strip ? stripPaths(count, gap) : wedgePaths(count, gap);
+      pieces.innerHTML = parts.map(p => `
+        <g class="piece" transform="translate(${p.dx.toFixed(2)} ${p.dy.toFixed(2)})">
+          <path d="${p.crust}" fill="${strip ? BREAD : CRUST}" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>
+          <path d="${p.sauce}" fill="${strip ? FILL : SAUCE}"/>
+          ${(p.tops || []).map(o => `<circle cx="${o.x}" cy="${o.y}" r="6" fill="#cc3b2c" stroke="${INK}" stroke-width="2"/>`).join('')}
+        </g>`).join('');
     }
-    c.tally(pieces);
+    c.tally(count);
     draw();
 
     function cut(x, y) {
       if (!running) return;
-      pieces++;
-      c.tally(pieces);
-      c.countUp(pieces, { x, y });
+      count++;
+      c.tally(count);
+      c.countUp(count, { x, y });
       Sfx.chop();
-      Fx.crumbs(x, y);
+      Fx.crumbs(x, y, strip ? '#e3c58a' : '#d24a32');
       draw();
-      vessel.classList.remove('shake'); void vessel.offsetWidth; vessel.classList.add('shake');
-      if (pieces > spec.n) slips++;
-      if (pieces === spec.n) { running = false; finish(spec, slips, started, onDone); }
+      replay(knife, 'go');
+      replay(pieces, 'split');
+      if (count > spec.n) slips++;
+      if (count === spec.n) { running = false; finish(spec, slips, started, onDone); }
     }
 
-    vessel.addEventListener('pointerdown', e => { if (!e.button) { e.preventDefault(); down = true; } });
-    vessel.addEventListener('pointerup', e => { if (down) { cut(e.clientX, e.clientY); down = false; } });
-    vessel.addEventListener('pointercancel', () => { down = false; });
-
+    onStroke(vessel, cut);
     setTimeout(() => c.sayPrompt(), 300);
     return { stop() { running = false; } };
   }
 
   // ---------- match-1to1 ----------
-  // The strongest mechanic in the design: everyone needs one, and the reason to
-  // care is obvious. One-to-one correspondence with a purpose.
+  // The strongest mechanic in the design: everyone needs one, and the reason to care
+  // is obvious. One-to-one correspondence with a purpose.
   function match1to1(spec, onDone) {
     const c = chrome(spec);
     const root = area();
@@ -348,7 +421,7 @@ const Stage = (() => {
       // Serving someone twice isn't an error, it just doesn't feed anyone new.
       if (!running || seat.classList.contains('fed')) { if (running) slips++; return; }
       seat.classList.add('fed');
-      seat.querySelector('.plate').innerHTML = itemSvg(spec.item);
+      seat.querySelector('.plate').innerHTML = itemImg(spec.item);
       served++;
       c.tally(served);
       c.countUp(served, at);
@@ -364,7 +437,7 @@ const Stage = (() => {
     }));
 
     for (let i = 0; i < 3; i++) {
-      const src = el('button', 'item supply-item', itemSvg(spec.item));
+      const src = el('button', 'item supply-item', itemImg(spec.item));
       draggable(src, { onDrop: ({ x, y }) => {
         const hit = seats.find(s => inside(s.getBoundingClientRect(), x, y));
         if (hit) serve(hit, { x, y });
@@ -407,7 +480,7 @@ const Stage = (() => {
       if (active && active.stop) active.stop();
       active = null;
       const a = document.querySelector('#stage-area');
-      if (a) { a.innerHTML = ''; a.className = 'stage-area'; }
+      if (a) { a.innerHTML = ''; a.className = 'stage-area'; a.style.cssText = ''; }
     },
   };
 })();

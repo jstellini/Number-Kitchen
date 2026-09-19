@@ -64,10 +64,10 @@ const App = (() => {
       card.style.setProperty('--c', r.color);
       card.style.animationDelay = (i * 45) + 'ms';
       card.innerHTML = `
-        <span class="r-icon">${open ? r.icon : '🔒'}</span>
+        <span class="r-icon"><img src="${artUrl(open ? r.icon : 'icon-lock')}" alt="" draggable="false"></span>
         <span class="r-name">${r.name}</span>
         <span class="r-blurb">${open ? r.blurb : 'Cook the one before!'}</span>
-        ${made ? `<span class="r-made">${'⭐'.repeat(Math.min(made, 3))}</span>` : ''}`;
+        ${made ? `<span class="r-made">${`<img src="${artUrl('icon-star')}" alt="star">`.repeat(Math.min(made, 3))}</span>` : ''}`;
       // Left tappable while locked: saying what's still needed beats a dead button.
       tap(card, () => {
         if (!open) {
@@ -94,7 +94,7 @@ const App = (() => {
       return Object.assign({}, st, { n: Range.next(lim), voiceKey: `${r.id}-${st.id}` });
     });
     $('#cook-name').textContent = r.name;
-    $('#cook-icon').textContent = r.icon;
+    $('#cook-icon').innerHTML = `<img src="${artUrl(r.icon)}" alt="" draggable="false">`;
     document.documentElement.style.setProperty('--recipe', r.color);
     show('cook');
     step(0);
@@ -117,7 +117,7 @@ const App = (() => {
     progress.cooked[r.id] = timesCooked(r.id) + 1;
     save();
     const firstTime = progress.cooked[r.id] === 1;
-    $('#served-icon').textContent = r.icon;
+    $('#served-icon').innerHTML = `<img src="${artUrl(r.icon)}" alt="" draggable="false">`;
     $('#served-name').textContent = r.name;
     $('#served-badge').textContent = firstTime ? 'New recipe!' : 'Made again!';
     // Unlocking the next recipe is the reward the whole loop hangs on, so say it.
@@ -139,7 +139,7 @@ const App = (() => {
     $('#cafe-empty').classList.toggle('hidden', made.length > 0);
     counter.innerHTML = made.map(r => `
       <button class="dish" style="--c:${r.color}">
-        <span class="d-icon">${r.icon}</span>
+        <span class="d-icon"><img src="${artUrl(r.icon)}" alt="" draggable="false"></span>
         <span class="d-name">${r.name}</span>
         <span class="d-count">${timesCooked(r.id)}</span>
       </button>`).join('');
@@ -243,6 +243,7 @@ const App = (() => {
       // Decode the cast now, while she is reading the recipe book, so nobody pops
       // in halfway through a serve stage.
       CAST.forEach(c => { const i = new Image(); i.src = c.img; });
+      RECIPES.forEach(r => { const i = new Image(); i.src = artUrl(r.icon); });
       setTimeout(() => Voice.say("Welcome to Number Kitchen! Pick a recipe!", { key: 'welcome' }), 300);
     });
     $$('[data-go]').forEach(b => tap(b, () => { Sfx.tap(); show(b.dataset.go); }));
