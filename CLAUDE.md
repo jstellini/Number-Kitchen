@@ -93,6 +93,25 @@ shared kit (hair, hat and outfit are all enumerated `kind` strings), plus one en
 reuses it, which is what makes six on a stage affordable. Inlining eight of them instead would
 put ~30 nodes each into the live DOM.
 
+**A scene** — every stage sits in a dressed kitchen: `scene` in each recipe's entry in
+`js/data.js` gives a wall colour, a wall pattern (`gingham | stripe | tile | dot`), a worktop
+colour and a few prop art ids. It is all CSS gradients plus a handful of `<img>`, so it costs one
+rasterisation and nothing per frame. `#screen-cook` takes the same wall colour so the header and
+the scene below it read as one room. Objects floating on flat cream was the single biggest thing
+making the game look unfinished next to the competition.
+
+**The hand** — `assets/art/hand.svg` demonstrates and `hand-grip.svg` holds. The gripping one
+rides inside `.tool-rig` with a utensil, so the tool is being held rather than floating; the rig
+translates and the tool spins inside it, because a rolling pin should turn while the hand does
+not. The demonstrating one is driven by `idleDemo()` in `js/stages.js`: after ~4s of stillness it
+performs the gesture once and fades, then repeats. **It is never a cursor** — it must not compete
+with her finger. It replaced the text hints, which a three-year-old cannot read.
+
+**How many fit in a vessel** — `DEPTH` in `js/stages.js` caps rows per vessel and the grid sizes
+itself to the count, so two scoops read as two big scoops and twenty as a full bowl. A fixed grid
+made every amount look like a few small things rattling around, and a square grid of twenty
+spilled straight out of a bowl, which narrows towards the bottom.
+
 **Art** — two kinds, and picking the wrong one costs performance. Anything that *repeats* (an
 ingredient, a portion, a utensil, an icon) is a file in `assets/art/` used as `<img>`, so Safari
 rasterises it once and reuses it for all twenty copies. Anything whose *insides move* (a bowl, an

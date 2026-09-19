@@ -113,6 +113,41 @@ const Stage = (() => {
 
   const inside = (rect, x, y) => x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
 
+  // The kitchen behind the stage: a patterned wall, a worktop, a board under the
+  // vessel and a few props on the side. All CSS gradients plus a handful of <img>,
+  // so it costs one rasterisation and nothing per frame.
+  function sceneHtml(spec) {
+    const sc = spec.scene || {};
+    const props = (sc.props || []).map((id, i) =>
+      `<img class="prop p${i}" src="${artUrl(id)}" alt="" draggable="false">`).join('');
+    return `<div class="scene p-${sc.pattern || 'tile'}" aria-hidden="true"
+              style="--wall:${sc.wall || '#ffd9c4'};--counter:${sc.counter || '#c58a52'}">
+        <span class="wall"></span><span class="counter"></span>
+        ${spec.vessel ? '<span class="board"></span>' : ''}
+        <span class="props">${props}</span>
+      </div>`;
+  }
+
+  // A cartoon hand that shows the gesture when she has been still for a few seconds.
+  // It is a demonstrator, not a cursor — it never competes with her finger, and a
+  // three-year-old cannot read "Swipe to roll!", which is what this replaces.
+  function idleDemo(root, kind) {
+    const hand = el('img', 'demo-hand d-' + kind);
+    hand.src = artUrl('hand');
+    hand.alt = '';
+    hand.draggable = false;
+    root.appendChild(hand);
+    let timer = 0, alive = true;
+    const fire = () => {
+      if (!alive) return;
+      replay(hand, 'show');
+      timer = setTimeout(fire, 7000);
+    };
+    const arm = () => { clearTimeout(timer); if (alive) timer = setTimeout(fire, 4200); };
+    arm();
+    return { poke: arm, stop() { alive = false; clearTimeout(timer); hand.remove(); } };
+  }
+
   // A swipe or a poke on the vessel, whichever she manages. Deliberately forgiving:
   // the number is the point, not the motor precision.
   function onStroke(node, fn) {
@@ -121,6 +156,10 @@ const Stage = (() => {
     node.addEventListener('pointerup', e => { if (down) { down = false; fn(e.clientX, e.clientY); } });
     node.addEventListener('pointercancel', () => { down = false; });
   }
+
+  // How many rows of ingredients each vessel can hold before they stop looking like
+  // they are inside it. Deep-but-narrow vessels get fewer rows and more columns.
+  const DEPTH = { bowl: 3, blender: 3, dough: 3, pizza: 3, plate: 2, tray: 2, pan: 2, oven: 2 };
 
   // ---------- count-place ----------
   // Read the numeral, put that many things in the vessel. The spine of the game:
@@ -132,18 +171,28 @@ const Stage = (() => {
     // The vessel class carries where inside the art items may land (see the
     // .v-* rules in style.css) — geometry belongs with the art, not here.
     root.className = 'stage-area count-place v-' + spec.vessel;
-    root.innerHTML = `
+    root.innerHTML = sceneHtml(spec) + `
       <div class="vessel">${vesselSvg(spec.vessel)}<div class="drop"></div></div>
       <div class="supply"></div>`;
 
     const vessel = root.querySelector('.vessel');
     const drop = root.querySelector('.drop');
     const supply = root.querySelector('.supply');
+    // Lay the vessel's contents out to suit the count AND the vessel's shape: two
+    // big scoops read as two big scoops, twenty read as a full bowl. Rows are capped
+    // per vessel because a bowl seen from the side narrows towards the bottom — a
+    // square grid of twenty spilled straight out of it.
+    const rowCap = DEPTH[spec.vessel] || 3;
+    const cols = Math.min(7, Math.max(2, Math.ceil(spec.n / rowCap)));
+    drop.style.setProperty('--cols', cols);
+    drop.style.setProperty('--rows', Math.ceil(spec.n / cols));
     let placed = [], slips = 0, running = true;
     const started = performance.now();
+    const demo = idleDemo(root, 'place');
 
     function add(at) {
       if (!running) return;
+      demo.poke();
       const node = el('button', 'item placed', itemImg(spec.item));
       node.setAttribute('aria-label', 'remove');
       // Fly in from roughly where her finger was, so the item goes where she put it
@@ -170,26 +219,26 @@ const Stage = (() => {
         node.remove();
         placed = placed.filter(p => p !== node);
         c.tally(placed.length);
+        demo.poke();
         Sfx.lift();
         if (placed.length) Voice.count(placed.length);
       });
       if (placed.length === spec.n) {
         running = false;
+        demo.stop();
         finish(spec, slips, started, onDone);
       }
     }
 
-    // A small shelf of the ingredient. Tapping one or dragging it in both work.
-    for (let i = 0; i < 4; i++) {
-      const src = el('button', 'item supply-item', itemImg(spec.item));
-      draggable(src, { onDrop: ({ x, y, tapped }) => {
-        if (tapped || inside(drop.getBoundingClientRect(), x, y)) add({ x, y });
-      } });
-      supply.appendChild(src);
-    }
+    // One source on the tray. Tapping it or dragging from it both place an item.
+    const src = el('button', 'item supply-item', itemImg(spec.item));
+    draggable(src, { onDrop: ({ x, y, tapped }) => {
+      if (tapped || inside(drop.getBoundingClientRect(), x, y)) add({ x, y });
+    } });
+    supply.appendChild(src);
 
     setTimeout(() => c.sayPrompt(), 300);
-    return { stop() { running = false; } };
+    return { stop() { running = false; demo.stop(); } };
   }
 
   // ---------- count-gesture ----------
@@ -200,13 +249,18 @@ const Stage = (() => {
     const c = chrome(spec);
     const root = area();
     root.className = 'stage-area count-gesture g-' + spec.gesture + ' v-' + spec.vessel;
-    root.innerHTML = `
+    // The rig translates, the tool inside it spins: a rolling pin should turn while
+    // the hand holding it does not.
+    root.innerHTML = sceneHtml(spec) + `
       <div class="vessel big">${vesselSvg(spec.vessel)}
-        <img class="tool" src="${artUrl(spec.tool)}" alt="" draggable="false">
-      </div>
-      <p class="hint">Swipe to ${spec.gesture}!</p>`;
+        <span class="tool-rig">
+          <img class="tool" src="${artUrl(spec.tool)}" alt="" draggable="false">
+          <img class="grip" src="${artUrl('hand-grip')}" alt="" draggable="false">
+        </span>
+      </div>`;
 
     const vessel = root.querySelector('.vessel');
+    const rig = root.querySelector('.tool-rig');
     const tool = root.querySelector('.tool');
     const blob = root.querySelector('.v-blob');
     let count = 0, slips = 0, running = true;
@@ -219,7 +273,8 @@ const Stage = (() => {
       c.tally(count);
       c.countUp(count, { x, y });
       (Sfx[SOUND[spec.gesture]] || Sfx.plop)();
-      replay(tool, 'go');
+      replay(rig, 'go');
+      replay(tool, 'spin');
       replay(vessel, 'react');
       // Dough actually spreads as it is rolled, so the work shows.
       if (blob) blob.style.setProperty('--spread', (1 + Math.min(count, 10) * 0.022).toFixed(3));
@@ -240,7 +295,7 @@ const Stage = (() => {
     const c = chrome(spec);
     const root = area();
     root.className = 'stage-area set-dial d-' + spec.device;
-    root.innerHTML = `
+    root.innerHTML = sceneHtml(spec) + `
       <div class="vessel big">${vesselSvg(spec.device)}
         <span class="steam"><i></i><i></i><i></i></span>
       </div>
@@ -254,11 +309,13 @@ const Stage = (() => {
     let value = 0, slips = 0, running = true, settle = 0;
     const started = performance.now();
     const MAXV = 20;
+    const demo = idleDemo(root, 'dial');
 
     function set(v) {
       if (!running) return;
       const next = Math.max(0, Math.min(MAXV, v));
       if (next === value) return;
+      demo.poke();
       value = next;
       read.textContent = value;
       replay(read, 'bump');
@@ -275,6 +332,7 @@ const Stage = (() => {
         settle = setTimeout(() => {
           if (!running) return;
           running = false;
+          demo.stop();
           (spec.device === 'blender' ? Sfx.blender : Sfx.ding)();
           root.classList.add('running');
           setTimeout(() => finish(spec, slips, started, onDone), 900);
@@ -286,7 +344,7 @@ const Stage = (() => {
     root.querySelector('.down').addEventListener('pointerdown', e => { e.preventDefault(); slips++; set(value - 1); });
 
     setTimeout(() => c.sayPrompt(), 300);
-    return { stop() { running = false; clearTimeout(settle); } };
+    return { stop() { running = false; clearTimeout(settle); demo.stop(); } };
   }
 
   // ---------- cut-into ----------
@@ -344,17 +402,19 @@ const Stage = (() => {
     const root = area();
     const strip = spec.shape === 'strip';
     root.className = 'stage-area cut-into ' + (strip ? 'c-strip' : 'c-wedge');
-    root.innerHTML = `
+    root.innerHTML = sceneHtml(spec) + `
       <div class="vessel big cutting">
         ${strip ? vesselSvg('plate') : ''}
         <svg class="pieces" viewBox="0 0 200 140" aria-hidden="true"></svg>
-        <img class="tool knife" src="${artUrl('knife')}" alt="" draggable="false">
-      </div>
-      <p class="hint">Swipe to cut!</p>`;
+        <span class="tool-rig knife-rig">
+          <img class="tool knife" src="${artUrl('knife')}" alt="" draggable="false">
+          <img class="grip" src="${artUrl('hand-grip')}" alt="" draggable="false">
+        </span>
+      </div>`;
 
     const vessel = root.querySelector('.vessel');
     const pieces = root.querySelector('.pieces');
-    const knife = root.querySelector('.knife');
+    const knifeRig = root.querySelector('.knife-rig');
     let count = 1, slips = 0, running = true;
     const started = performance.now();
 
@@ -381,7 +441,7 @@ const Stage = (() => {
       Sfx.chop();
       Fx.crumbs(x, y, strip ? '#e3c58a' : '#d24a32');
       draw();
-      replay(knife, 'go');
+      replay(knifeRig, 'go');
       replay(pieces, 'split');
       if (count > spec.n) slips++;
       if (count === spec.n) { running = false; finish(spec, slips, started, onDone); }
@@ -403,7 +463,7 @@ const Stage = (() => {
     const pool = CAST.slice();
     for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
     const guests = Array.from({ length: spec.n }, (_, i) => pool[i % pool.length]);
-    root.innerHTML = `
+    root.innerHTML = sceneHtml(spec) + `
       <div class="guests">${guests.map((g, i) => `
         <div class="guest" data-i="${i}" style="--c:${g.color}">
           <span class="who"><img src="${g.img}" alt="${g.name}" draggable="false"></span>
@@ -416,8 +476,10 @@ const Stage = (() => {
     const seats = Array.from(root.querySelectorAll('.guest'));
     let served = 0, slips = 0, running = true;
     const started = performance.now();
+    const demo = idleDemo(root, 'serve');
 
     function serve(seat, at) {
+      demo.poke();
       // Serving someone twice isn't an error, it just doesn't feed anyone new.
       if (!running || seat.classList.contains('fed')) { if (running) slips++; return; }
       seat.classList.add('fed');
@@ -426,7 +488,7 @@ const Stage = (() => {
       c.tally(served);
       c.countUp(served, at);
       Sfx.yum();
-      if (served === spec.n) { running = false; finish(spec, slips, started, onDone); }
+      if (served === spec.n) { running = false; demo.stop(); finish(spec, slips, started, onDone); }
     }
 
     // Tap a guest to serve them, or drag a portion across from the shelf.
@@ -436,17 +498,15 @@ const Stage = (() => {
       serve(seat, { x: e.clientX, y: e.clientY });
     }));
 
-    for (let i = 0; i < 3; i++) {
-      const src = el('button', 'item supply-item', itemImg(spec.item));
-      draggable(src, { onDrop: ({ x, y }) => {
-        const hit = seats.find(s => inside(s.getBoundingClientRect(), x, y));
-        if (hit) serve(hit, { x, y });
-      } });
-      supply.appendChild(src);
-    }
+    const src = el('button', 'item supply-item', itemImg(spec.item));
+    draggable(src, { onDrop: ({ x, y }) => {
+      const hit = seats.find(s => inside(s.getBoundingClientRect(), x, y));
+      if (hit) serve(hit, { x, y });
+    } });
+    supply.appendChild(src);
 
     setTimeout(() => c.sayPrompt(), 300);
-    return { stop() { running = false; } };
+    return { stop() { running = false; demo.stop(); } };
   }
 
   const PRIMITIVES = {

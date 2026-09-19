@@ -28,6 +28,10 @@ html, body {
 
 #app { position: fixed; inset: 0; }
 
+/* The cook screen takes the recipe's wall colour so the header and the scene
+   below it are one room, not two stacked panels. */
+#screen-cook { background: var(--wall, var(--cream)); }
+
 /* ---------- screens ---------- */
 .screen {
   position: absolute; inset: 0;
@@ -164,42 +168,153 @@ html, body {
 }
 .slot.on { background: var(--sun); }
 
-.stage-area { flex: 1 1 auto; position: relative; overflow: hidden; padding: 0 18px 14px; }
+.stage-area { flex: 1 1 auto; position: relative; overflow: hidden; }
 .stage-area.done { animation: flash .5s ease; }
 @keyframes flash { 40% { transform: scale(1.02); } }
 
 .vessel {
-  position: absolute; left: 50%; top: 2%;
-  width: min(68%, 520px); transform: translateX(-50%);
+  position: absolute; left: 50%; top: 24%;
+  width: min(56%, 430px); transform: translateX(-50%);
 }
-/* Stages that carry a control or a hint underneath leave room for it. */
-.vessel.big { top: 5%; width: min(62%, 470px); }
+/* Stages that carry a control underneath leave room for it. */
+.vessel.big { top: 29%; width: min(50%, 390px); }
 .vessel svg { width: 100%; height: auto; display: block; }
+
+/* ---------- the dressed kitchen ----------
+   A patterned wall, a worktop, a board and a few props behind every stage. Objects
+   floating on flat cream was what made the game look unfinished next to the
+   reference. All CSS gradients and a handful of <img>: one rasterisation, nothing
+   per frame. Colours come from `scene` in js/data.js, so each recipe is a different
+   corner of the kitchen. */
+.scene { position: absolute; inset: 0; z-index: 0; overflow: hidden; }
+.scene .wall {
+  position: absolute; left: 0; right: 0; top: 0; height: 54%;
+  background-color: var(--wall);
+}
+.scene .counter {
+  position: absolute; left: 0; right: 0; top: 54%; bottom: 0;
+  background-color: var(--counter);
+  /* Wood grain, a lit top edge and a shaded floor — the cheapest way to read as a
+     surface with a thickness rather than a colour block. */
+  background-image: repeating-linear-gradient(94deg,
+    rgba(0, 0, 0, .05) 0 3px, transparent 3px 26px, rgba(255, 255, 255, .05) 26px 30px, transparent 30px 58px);
+  box-shadow: inset 0 7px 0 rgba(255, 255, 255, .3), inset 0 -22px 26px rgba(0, 0, 0, .09);
+}
+/* Wall patterns. */
+.p-tile .wall {
+  background-image:
+    repeating-linear-gradient(0deg,  rgba(0, 0, 0, .07) 0 3px, transparent 3px 58px),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, .07) 0 3px, transparent 3px 58px);
+}
+.p-gingham .wall {
+  background-image:
+    repeating-linear-gradient(0deg,  rgba(255, 255, 255, .38) 0 26px, transparent 26px 52px),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, .38) 0 26px, transparent 26px 52px);
+}
+.p-stripe .wall {
+  background-image: repeating-linear-gradient(90deg, rgba(255, 255, 255, .32) 0 22px, transparent 22px 44px);
+}
+.p-dot .wall {
+  background-image: radial-gradient(rgba(255, 255, 255, .5) 5px, transparent 6px);
+  background-size: 46px 46px;
+}
+/* The board the food sits on. Appliances don't get one. */
+.scene .board {
+  position: absolute; left: 50%; top: 22%; width: min(66%, 640px); height: 58%;
+  transform: translateX(-50%);
+  border-radius: 28px; background: #e8c89a;
+  box-shadow: inset 0 8px 0 rgba(255, 255, 255, .34), inset 0 -10px 0 rgba(0, 0, 0, .1),
+              0 9px 0 rgba(0, 0, 0, .09);
+}
+.scene .props { position: absolute; inset: 0; }
+.scene .prop {
+  position: absolute; display: block; width: clamp(26px, 3.8vw, 50px); height: auto;
+}
+.scene .prop.p0 { left: 3.5%;  top: 60%; transform: rotate(-13deg); }
+.scene .prop.p1 { right: 4%;   top: 57%; transform: rotate(15deg); }
+.scene .prop.p2 { left: 8%;    top: 75%; transform: rotate(7deg); }
+
+/* Everything the child touches sits above the scene. */
+.vessel, .guests, .dial, .supply, .pieces { z-index: 1; }
+.supply { z-index: 3; }
+
+/* ---------- the hand ----------
+   Two jobs. Gripping: it rides with a utensil, so the tool is being held rather than
+   floating. Demonstrating: after a few seconds of stillness it performs the gesture
+   once and fades. It is never a cursor — it must not compete with her finger. */
+.tool-rig { position: absolute; display: block; }
+.tool-rig .tool { width: 100%; height: auto; display: block; }
+.tool-rig .grip { position: absolute; display: block; height: auto; }
+
+.demo-hand {
+  position: absolute; z-index: 4; pointer-events: none;
+  width: clamp(76px, 11.5vw, 140px); height: auto; opacity: 0;
+}
+.demo-hand.show { animation-duration: 2.6s; animation-timing-function: ease-in-out; }
+
+/* Pick it up from the shelf, carry it to the vessel, put it in. */
+.d-place { left: 50%; bottom: 15%; }
+.d-place.show { animation-name: demo-place; }
+@keyframes demo-place {
+  0%   { opacity: 0; transform: translate(-50%, 14%) scale(.9); }
+  10%  { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  18%  { transform: translate(-50%, 6%) scale(.94); }
+  52%  { opacity: 1; transform: translate(-50%, -28vh) scale(1); }
+  64%  { transform: translate(-50%, -25vh) scale(.94); }
+  80%  { opacity: 1; transform: translate(-50%, -28vh) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -28vh) scale(1); }
+}
+/* Tap the plus twice. */
+.d-dial { left: 63%; bottom: 7%; }
+.d-dial.show { animation-name: demo-dial; }
+@keyframes demo-dial {
+  0%   { opacity: 0; transform: translateY(20%) scale(.9); }
+  12%  { opacity: 1; transform: translateY(0) scale(1); }
+  28%  { transform: translateY(12%) scale(.93); }
+  42%  { transform: translateY(0) scale(1); }
+  58%  { transform: translateY(12%) scale(.93); }
+  72%  { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(0) scale(1); }
+}
+/* Carry a portion up to the first guest. */
+.d-serve { left: 50%; bottom: 15%; }
+.d-serve.show { animation-name: demo-serve; }
+@keyframes demo-serve {
+  0%   { opacity: 0; transform: translate(-50%, 14%) scale(.9); }
+  12%  { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  55%  { opacity: 1; transform: translate(-130%, -22vh) scale(1); }
+  70%  { transform: translate(-130%, -19vh) scale(.94); }
+  85%  { opacity: 1; transform: translate(-130%, -22vh) scale(1); }
+  100% { opacity: 0; transform: translate(-130%, -22vh) scale(1); }
+}
 
 /* Where placed items land: a five-column grid mirroring a ten-frame row, so up to
    twenty items sit predictably and none needs its own shadow. */
 .drop {
   position: absolute; inset: 22% 12% 8%;
-  display: grid; grid-template-columns: repeat(5, 1fr);
-  gap: 2%; align-content: center; justify-items: center; align-items: center;
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 5), 1fr);
+  grid-template-rows: repeat(var(--rows, 4), 1fr);
+  gap: 2%; place-items: center;
 }
 /* Where each vessel can actually hold something, as a fraction of its 200x140 art
    box: inside the bowl, on the red of the pizza, in the oven cavity. Keeping these
    with the art means a new vessel needs no change to js/stages.js. */
-.v-bowl    .drop { inset: 37% 11% 10%; }
+.v-bowl    .drop { inset: 35% 18% 25%; }
 .v-dough   .drop { inset: 17%  8% 11%; }
 .v-pizza   .drop { inset: 13% 24% 13%; }
 .v-oven    .drop { inset: 36% 23% 21%; }
-.v-blender .drop { inset: 17% 32% 29%; }
+.v-blender .drop { inset: 22% 34% 32%; }
 .v-plate   .drop { inset: 26% 16% 26%; }
 .v-tray    .drop { inset: 16%  5% 16%; }
 .v-pan     .drop { inset: 31% 14% 23% 18%; }
 
-.item {
-  border: 0; background: none; padding: 0; cursor: pointer;
-  width: clamp(30px, 4.6vw, 54px); height: clamp(30px, 4.6vw, 54px);
-}
+.item { border: 0; background: none; padding: 0; cursor: pointer; }
 .item img { width: 100%; height: 100%; display: block; }
+/* Fill the cell and let the artwork letterbox inside it, so an item is as big
+   as its share of the vessel allows however many there are. */
+.drop .item { width: 92%; height: 92%; }
+.drop .item img { object-fit: contain; }
 /* Each item flies in from roughly where her finger was (js/stages.js sets --fx/--fy)
    and squashes as it lands, so it goes where she put it rather than fading in from
    nowhere. */
@@ -221,64 +336,71 @@ html, body {
 .vessel.react { animation: react .3s ease; }
 
 .supply {
-  position: absolute; left: 58px; right: 58px; bottom: 6px;
-  display: flex; gap: clamp(10px, 2.4vw, 26px); justify-content: center;
-  padding: 10px; background: #fff; border-radius: 22px; box-shadow: var(--shadow);
+  position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%);
+  display: flex; gap: 12px; justify-content: center; align-items: center;
+  padding: 10px 26px; border-radius: 26px;
+  background: rgba(255, 255, 255, .92);
+  box-shadow: inset 0 3px 0 rgba(255, 255, 255, .9), 0 6px 0 rgba(0, 0, 0, .12);
 }
-.supply-item { width: clamp(42px, 6.2vw, 70px); height: clamp(42px, 6.2vw, 70px); }
-.supply-item:active { transform: scale(1.12); }
-
-.hint {
-  position: absolute; left: 0; right: 0; bottom: 14px; margin: 0; text-align: center;
-  font-family: 'Andika', sans-serif; font-size: clamp(15px, 2.2vw, 21px); opacity: .6;
-}
+.supply-item { width: clamp(54px, 8vw, 96px); height: clamp(54px, 8vw, 96px); }
+/* A slow breath so the tray reads as "take one" without a text label. */
+@keyframes offer { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-7%) scale(1.05); } }
+.supply-item { animation: offer 2.4s ease-in-out infinite; }
+.supply-item:active { animation: none; transform: scale(1.12); }
+.screen:not(.active) .supply-item { animation-play-state: paused; }
 
 /* ---------- count-gesture: the utensil actually does the job ---------- */
-.tool { position: absolute; pointer-events: none; display: block; }
 .count-gesture .vessel { cursor: grab; }
 
 /* Rolling pin travels across the dough and keeps turning on the way back. */
-.g-roll .tool { width: 62%; left: 19%; top: 24%; }
+.g-roll .tool-rig { width: 62%; left: 19%; top: 24%; }
 @keyframes roll-go {
-  0%   { transform: translateX(-36%) rotate(0deg); }
-  55%  { transform: translateX(36%) rotate(300deg); }
-  100% { transform: translateX(-36%) rotate(600deg); }
+  0%   { transform: translateX(-30%); }
+  55%  { transform: translateX(30%); }
+  100% { transform: translateX(-30%); }
 }
-.g-roll .tool.go { animation: roll-go .6s ease-in-out; }
+@keyframes pin-spin { to { transform: rotate(600deg); } }
+.g-roll .tool.spin { animation: pin-spin .6s ease-in-out; }
+.g-roll .tool-rig.go { animation: roll-go .6s ease-in-out; }
+.g-roll   .grip { left: 57%; top: 29%; width: 33%; }
+.g-stir   .grip { left: 31%; top: 50%; width: 40%; }
+.g-whisk  .grip { left: 30%; top: 8%;  width: 40%; }
+.g-spread .grip { left: 19%; top: 54%; width: 46%; }
+.g-flip   .grip { left: 30%; top: 48%; width: 40%; }
 /* ...and the dough spreads under it, so the work shows. */
 .v-blob { transform: scaleX(var(--spread, 1)); transition: transform .35s ease; }
 
 /* Spoon swings right round the bowl — origin below it, so a rotate is an orbit. */
-.g-stir .tool { width: 20%; left: 40%; top: 2%; transform-origin: 50% 210%; }
+.g-stir .tool-rig { width: 20%; left: 40%; top: 2%; transform-origin: 50% 210%; }
 @keyframes stir-go { to { transform: rotate(360deg); } }
-.g-stir .tool.go { animation: stir-go .6s ease-in-out; }
+.g-stir .tool-rig.go { animation: stir-go .6s ease-in-out; }
 
-.g-whisk .tool { width: 26%; left: 37%; top: 0%; }
+.g-whisk .tool-rig { width: 26%; left: 37%; top: 0%; }
 @keyframes whisk-go {
   0%, 100% { transform: translateX(0) rotate(0deg); }
   20% { transform: translateX(-9%) rotate(-10deg); }
   45% { transform: translateX(9%) rotate(10deg); }
   70% { transform: translateX(-6%) rotate(-7deg); }
 }
-.g-whisk .tool.go { animation: whisk-go .5s ease-in-out; }
+.g-whisk .tool-rig.go { animation: whisk-go .5s ease-in-out; }
 
-.g-spread .tool { width: 22%; left: 39%; top: 8%; }
+.g-spread .tool-rig { width: 22%; left: 39%; top: 8%; }
 @keyframes spread-go {
   0%   { transform: translateX(-38%) rotate(-10deg); }
   100% { transform: translateX(38%) rotate(10deg); }
 }
-.g-spread .tool.go { animation: spread-go .5s ease-in-out; }
+.g-spread .tool-rig.go { animation: spread-go .5s ease-in-out; }
 
-.g-flip .tool { width: 30%; left: 35%; top: 10%; }
+.g-flip .tool-rig { width: 30%; left: 35%; top: 10%; }
 @keyframes flip-go {
   0%, 100% { transform: translateY(0) rotate(0deg); }
   40% { transform: translateY(-34%) rotate(-28deg); }
   65% { transform: translateY(-10%) rotate(8deg); }
 }
-.g-flip .tool.go { animation: flip-go .55s ease; }
+.g-flip .tool-rig.go { animation: flip-go .55s ease; }
 
 /* ---------- set-dial: the appliance answers the dial ---------- */
-.set-dial .vessel.big { top: 12%; }
+.set-dial .vessel.big { top: 14%; }
 .dial {
   position: absolute; left: 50%; bottom: 6%; transform: translateX(-50%);
   display: flex; align-items: center; gap: clamp(14px, 3vw, 30px);
@@ -339,14 +461,15 @@ html, body {
 .c-strip .pieces { position: absolute; inset: 0; height: 100%; }
 @keyframes split { 40% { transform: scale(1.035); } }
 .pieces.split { animation: split .28s ease; }
-.cut-into .knife { width: 17%; left: 41.5%; top: -8%; opacity: 0; }
+.cut-into .knife-rig { width: 17%; left: 41.5%; top: -8%; opacity: 0; }
+.cut-into .knife-rig .grip { left: 2%; top: 50%; width: 66%; }
 @keyframes knife-go {
   0%   { opacity: 0; transform: translateY(-30%) rotate(-14deg); }
   25%  { opacity: 1; }
   65%  { transform: translateY(45%) rotate(6deg); }
   100% { opacity: 0; transform: translateY(95%) rotate(12deg); }
 }
-.cut-into .knife.go { animation: knife-go .42s ease-in; }
+.cut-into .knife-rig.go { animation: knife-go .42s ease-in; }
 
 /* ---------- match-1to1 ---------- */
 /* The townsfolk from tools/build_cast.py, as <img> so Safari rasterises each one

@@ -91,11 +91,13 @@ const App = (() => {
       const lim = Stage.limitsFor(st.primitive);
       // voiceKey is recipe-scoped: 'flour' means different lines in different
       // recipes, and 'bake' is an oven in one and a stove in another.
-      return Object.assign({}, st, { n: Range.next(lim), voiceKey: `${r.id}-${st.id}` });
+      return Object.assign({}, st, { n: Range.next(lim), voiceKey: `${r.id}-${st.id}`, scene: r.scene });
     });
     $('#cook-name').textContent = r.name;
     $('#cook-icon').innerHTML = `<img src="${artUrl(r.icon)}" alt="" draggable="false">`;
     document.documentElement.style.setProperty('--recipe', r.color);
+    document.documentElement.style.setProperty('--wall', r.scene.wall);
+    document.documentElement.style.setProperty('--counter', r.scene.counter);
     show('cook');
     step(0);
   }

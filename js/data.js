@@ -37,11 +37,16 @@ function numeralStrokes(n) {
 const artUrl = id => `assets/art/${id}.svg`;
 
 // ---------- the recipe book ----------
+// `scene` dresses the kitchen behind each recipe: a patterned wall, a worktop, and a
+// few props scattered on it. Objects floating on flat cream was the single biggest
+// thing making the game look unfinished next to the reference. Pattern is one of
+// gingham | stripe | tile | dot (see .p-* in css/style.css); props are art ids.
 // Stages name a primitive and its art. `n` is injected at runtime by the range model.
 // `say` lines use {n} for the chosen number; the voice key is built from the stage id.
 const RECIPES = [
   {
     id: 'pizza', name: 'Pizza', icon: 'icon-pizza', color: '#e8542f',
+    scene: { wall: '#ffc9a8', pattern: 'tile',    counter: '#c58a52', props: ['tomato', 'basil', 'cheese'] },
     blurb: 'Roll it, top it, bake it.',
     stages: [
       { id: 'flour',  primitive: 'count-place',   item: 'scoop',     vessel: 'bowl',  say: 'Put {n} scoops of flour in the bowl.' },
@@ -54,6 +59,7 @@ const RECIPES = [
   },
   {
     id: 'cupcakes', name: 'Cupcakes', icon: 'icon-cupcakes', color: '#e85fa2',
+    scene: { wall: '#ffcfe2', pattern: 'stripe',  counter: '#e6dfd2', props: ['cherry', 'sprinkle', 'egg'] },
     blurb: 'A tray of ten, then some more.',
     stages: [
       { id: 'flour',  primitive: 'count-place',   item: 'scoop',    vessel: 'bowl', say: 'Put {n} scoops of flour in the bowl.' },
@@ -67,6 +73,7 @@ const RECIPES = [
   },
   {
     id: 'sandwich', name: 'Sandwich', icon: 'icon-sandwich', color: '#d79a3c',
+    scene: { wall: '#b6e3d6', pattern: 'gingham', counter: '#d9b485', props: ['lettuce', 'butter', 'tomato'] },
     blurb: 'No oven needed.',
     stages: [
       { id: 'bread',  primitive: 'count-place',   item: 'bread',   vessel: 'plate', say: 'Put {n} slices of bread on the plate.' },
@@ -78,6 +85,7 @@ const RECIPES = [
   },
   {
     id: 'smoothie', name: 'Smoothie', icon: 'icon-smoothie', color: '#8e44ff',
+    scene: { wall: '#d4c7f2', pattern: 'dot',     counter: '#e9e7f0', props: ['banana', 'strawberry', 'berry'] },
     blurb: 'Whizz it up and pour.',
     stages: [
       { id: 'fruit',  primitive: 'count-place', item: 'strawberry', vessel: 'blender', say: 'Put {n} strawberries in the blender.' },
@@ -89,6 +97,7 @@ const RECIPES = [
   },
   {
     id: 'pancakes', name: 'Pancakes', icon: 'icon-pancakes', color: '#c9772f',
+    scene: { wall: '#ffe2a6', pattern: 'gingham', counter: '#c58a52', props: ['butter', 'berry', 'cherry'] },
     blurb: 'Flip them and stack them high.',
     stages: [
       { id: 'flour',  primitive: 'count-place',   item: 'scoop',  vessel: 'bowl', say: 'Put {n} scoops of flour in the bowl.' },

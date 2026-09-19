@@ -271,6 +271,47 @@ def banana():
             + sh("M18 26 L24 34", "#8a6a1e", w=6))
 
 
+# ---------------------------------------------------------------- the hand
+# The reference game keeps a cartoon hand in the scene at all times: it grips the
+# knife, it carries the donut. It does two jobs at once — it shows the gesture to a
+# child who cannot read the hint, and it makes the screen feel inhabited rather than
+# like objects floating on a page.
+
+SKIN = "#f4d3ab"
+CUFF = "#8e5fd4"
+
+
+def hand():
+    """Pointing, for demonstrating a tap or a drag."""
+    return svg100(
+        # thumb, behind the palm
+        sh("M31 54 A11 11 0 0 0 14 64 L18 76 A10 10 0 0 0 34 76 Z", SKIN)
+        # index finger
+        + sh("M51 6 A8 8 0 0 1 59 14 L59 50 L43 50 L43 14 A8 8 0 0 1 51 6 Z", SKIN)
+        # palm
+        + sh("M30 42 L72 42 A10 10 0 0 1 72 80 L30 80 A10 10 0 0 1 30 42 Z", SKIN)
+        # curled fingers, hinted rather than drawn
+        + '<path d="M46 58 h24 M46 68 h22" stroke="#d9ab7c" stroke-width="3" '
+          'stroke-linecap="round" opacity=".8"/>'
+        + sh("M25 76 L77 76 L77 92 A7 7 0 0 1 70 99 L32 99 A7 7 0 0 1 25 92 Z", CUFF)
+        + sh("M56 80 L70 80 A4 4 0 0 1 70 92 L56 92 A4 4 0 0 1 56 80 Z", "#6b3fb0", w=2.6)
+        + shine(40, 52, 6, 9, -20, .3))
+
+
+def hand_grip():
+    """A closed fist, for riding along with a utensil."""
+    return svg100(
+        sh("M30 60 A12 12 0 0 0 14 70 L19 82 A11 11 0 0 0 36 82 Z", SKIN)
+        + sh("M24 30 L72 30 A12 12 0 0 1 72 72 L24 72 A12 12 0 0 1 24 30 Z", SKIN)
+        + "".join(f'<path d="M{34 + i * 13} 30 a6.5 6.5 0 0 1 13 0" fill="{SKIN}" '
+                  f'stroke="{INK}" stroke-width="{W}"/>' for i in range(3))
+        + '<path d="M34 50 h34 M34 61 h32" stroke="#d9ab7c" stroke-width="3" '
+          'stroke-linecap="round" opacity=".8"/>'
+        + sh("M22 70 L78 70 L78 88 A7 7 0 0 1 71 95 L29 95 A7 7 0 0 1 22 88 Z", CUFF)
+        + sh("M56 74 L70 74 A4 4 0 0 1 70 86 L56 86 A4 4 0 0 1 56 74 Z", "#6b3fb0", w=2.6)
+        + shine(36, 42, 7, 5, -20, .3))
+
+
 # ---------------------------------------------------------------- utensils
 
 def rollingpin():
@@ -380,6 +421,7 @@ ITEMS = {
 }
 
 WHOLE = {  # already complete <svg> documents
+    "hand": hand, "hand-grip": hand_grip,
     "rollingpin": rollingpin, "spoon": spoon, "whisk": whisk, "knife": knife, "spatula": spatula,
     "icon-pizza": icon_pizza, "icon-cupcakes": icon_cupcakes, "icon-sandwich": icon_sandwich,
     "icon-smoothie": icon_smoothie, "icon-pancakes": icon_pancakes,
