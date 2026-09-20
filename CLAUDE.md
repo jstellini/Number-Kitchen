@@ -144,5 +144,6 @@ a clip is missing, so the game is always playable before clips exist. Regenerate
 ## Testing
 
 There is no test suite; this is a game for one child. Verify by playing it. `serve.ps1` runs a
-local server on the PC, and Netlify publishes a preview for every pull request so a branch can be
-tried on the actual iPad before merging — which is the only test that counts.
+local server on the PC, `main` deploys to <https://number-kitchen.netlify.app>, and Netlify
+publishes a preview for every pull request so a branch can be tried on the actual iPad before
+merging — which is the only test that counts.

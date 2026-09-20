@@ -8,20 +8,19 @@ A follow-up to [ABC Town](https://github.com/jstellini/abc-town), built the same
 a lot of its machinery. The design rationale is in [`docs/BRIEF.md`](docs/BRIEF.md); the working
 rules are in [`CLAUDE.md`](CLAUDE.md).
 
+**Live site:** <https://number-kitchen.netlify.app>
+
 ## Running it
 
+**On the iPad** – open <https://number-kitchen.netlify.app> in Safari, then tap Share →
+**Add to Home Screen**. Launching from the icon runs it full-screen, keeps the saved progress
+safer, and makes the audio unlock stick. Hold the iPad sideways.
+
 **On this PC** – double-click `serve.ps1` (or right-click → *Run with PowerShell*) and open
-<http://localhost:8000/>.
+<http://localhost:8000/>. Use this when you want to try a change before pushing it.
 
-**On the iPad** (same Wi-Fi):
-
-1. Run `serve.ps1` once **as Administrator**. It prints an address like `http://192.168.1.23:8000/`.
-   Allow it through Windows Firewall if asked.
-2. Open that address in Safari on the iPad.
-3. Tap Share → **Add to Home Screen**. Launching from the icon runs it full-screen, keeps the
-   saved progress safer, and makes the audio unlock stick.
-
-Hold the iPad sideways.
+**A branch, on the iPad** – open a pull request and Netlify posts a deploy preview link on it;
+open that on the iPad to try the branch before merging.
 
 ## How it plays
 
