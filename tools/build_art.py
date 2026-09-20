@@ -389,6 +389,65 @@ def banana():
             + sh("M18 26 L24 34", "#8a6a1e", w=6))
 
 
+# ------------------------------------------------------- sources you take from
+# A bag you scoop out of and a carton you lift eggs from. These are the things the
+# child actually manipulates, so they are drawn at source size and sit on the bench.
+
+def flour_bag():
+    """An open paper sack. Press it and a heaped cup comes out."""
+    return (sh("M20 30 L80 30 L85 90 A8 8 0 0 1 77 98 L23 98 A8 8 0 0 1 15 90 Z", "#d8b98a")
+            + flat("M20 30 L32 30 L28 98 L23 98 A8 8 0 0 1 15 90 Z", "#c2a274", .5)
+            # the rolled-over mouth of the bag
+            + sh("M16 18 Q28 8 40 18 Q52 8 64 18 Q76 8 86 18 L82 34 L19 34 Z", "#e7cda6")
+            # flour heaped at the opening
+            + sh("M30 22 Q50 6 70 22 Q50 30 30 22 Z", "#fffaf0")
+            # a paper band, so it reads as a sack of something rather than a bag
+            + flat("M17 52 L84 52 L86 68 L18 68 Z", "#b9d4e8", .85)
+            + dot(36, 60, 5, "#fff", .85) + dot(50, 60, 5, "#fff", .85) + dot(64, 60, 5, "#fff", .85))
+
+
+def egg_carton():
+    """Six wells, drawn empty. The eggs are separate <img> so they can be taken."""
+    wells = "".join(circ(24 + 26 * i, 42 + 30 * j, 11, well("#c9b291"), w=2.8,
+                         ink=ink_of("#c9b291"))
+                    for j in range(2) for i in range(3))
+    return (sh("M8 26 L92 26 L95 88 A6 6 0 0 1 89 94 L11 94 A6 6 0 0 1 5 88 Z", "#d8c3a2")
+            # the lid, folded back behind the base
+            + sh("M10 26 L90 26 L86 8 L14 8 Z", "#c9b291", w=2.8)
+            + wells)
+
+
+def egg_whole():
+    """An egg still in its shell, for lifting out of the carton."""
+    return (ell(50, 54, 27, 34, "#fff6e4")
+            + shine(40, 36, 8, 12, -22, .55))
+
+
+def shell_half(left=True):
+    """Half a shell, for the moment it cracks. Jagged along the break."""
+    s = -1 if left else 1
+    d = (f"M50 22 A27 32 0 0 {0 if left else 1} 50 86 "
+         f"L{50 + s * 6} 78 L{50 + s * 14} 72 L{50 + s * 6} 64 "
+         f"L{50 + s * 16} 56 L{50 + s * 6} 48 L{50 + s * 14} 40 L{50 + s * 6} 32 Z")
+    return sh(d, "#fff6e4")
+
+
+def shell_l():
+    return shell_half(True)
+
+
+def shell_r():
+    return shell_half(False)
+
+
+def cup_empty():
+    """The measuring cup with nothing in it — the full one is `scoop`."""
+    return (sh("M27 38 L73 38 L66 86 A7 7 0 0 1 59 92 L41 92 A7 7 0 0 1 34 86 Z", "#ebe3d1")
+            + flat("M62 38 L66 86 A7 7 0 0 1 59 92 L52 92 L58 38 Z", "#d3c9b2")
+            + ell(50, 38, 23, 7, "#f7f2e6", w=3)
+            + shine(40, 50, 5, 9, -12, .4))
+
+
 # ---------------------------------------------------------------- the hand
 # The reference game keeps a cartoon hand in the scene at all times: it grips the
 # knife, it carries the donut. It does two jobs at once — it shows the gesture to a
@@ -531,6 +590,8 @@ def icon_pancakes():
 
 
 ITEMS = {
+    "flour-bag": flour_bag, "egg-carton": egg_carton, "egg-whole": egg_whole,
+    "shell-l": shell_l, "shell-r": shell_r, "cup-empty": cup_empty,
     "scoop": scoop, "egg": egg, "pepperoni": pepperoni, "cherry": cherry, "case": case_,
     "bread": bread, "ham": ham, "strawberry": strawberry, "berry": berry, "cup": cup,
     "slice": slice_, "cupcake": cupcake, "sandwich": sandwich, "pancake": pancake,
@@ -551,12 +612,23 @@ WHOLE = {  # already complete <svg> documents
 # 200x140, inlined into js/vessels.js so their parts can be animated.
 
 def v_bowl():
-    return (part("v-contents", "", 100, 96)
-            + sh("M10 48 A90 80 0 0 0 190 48 Z", "#dfe7ee", WV)
+    # Draw order matters: the bowl body is opaque, so the contents have to go on top
+    # of it (clipped to the inside) and under the rim. Fill first and the bowl simply
+    # covers it.
+    inside = "M18 54 A82 72 0 0 0 182 54 Z"
+    _DEFS.append(f'<clipPath id="bowlin"><path d="{inside}"/></clipPath>')
+    return (sh("M8 46 a92 84 0 0 0 184 0z", "#dfe7ee", WV)
             + flat("M26 62 A74 62 0 0 0 174 62 Z", "#cdd8e2", .55)
             + ell(100, 48, 90, 17, "#eef3f7", WV)
             + flat_ell(100, 48, 74, 11, "#b9c6d2")
-            + flat_ell(58, 84, 16, 9, "#fff", .35, -30))
+            + '<g clip-path="url(#bowlin)">'
+            + part("v-fill",
+                   f'<rect x="8" y="40" width="184" height="96" fill="{slab("#ecd49c")}"/>'
+                   + flat_ell(100, 42, 78, 8, "#f8ebcd", .95),
+                   100, 136)
+            + part("v-contents", "", 100, 96)
+            + '</g>'
+            + flat_ell(58, 84, 16, 9, "#fff", .3, -30))
 
 
 def v_dough():
@@ -651,6 +723,8 @@ GROUND = {
     "cheese": (50, 73, 30, 5), "mushroom": (50, 82, 20, 5), "olive": (50, 82, 21, 5),
     "butter": (50, 76, 26, 5), "banana": (50, 86, 30, 5), "lettuce": (50, 90, 34, 5),
     "basil": None, "sprinkle": None,
+    "flour-bag": (50, 97, 34, 5), "egg-carton": (50, 96, 40, 5),
+    "egg-whole": None, "shell-l": None, "shell-r": None, "cup-empty": (50, 95, 22, 4),
 }
 
 

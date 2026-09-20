@@ -91,7 +91,28 @@ primitive plus its art. No new code if it composes existing primitives. Then
 
 **A primitive** — one function in `js/stages.js` returning `{ stop() }`, plus an entry in the
 `PRIMITIVES` registry at the top. It receives `(spec, onDone)` where `spec.n` is the target
-number the range model chose.
+number the range model chose. It must set `root.innerHTML` **before** calling `chrome(spec)`,
+because the recipe card and the trays are built by `shell()` and chrome binds to them.
+
+**Make it physical.** The first pass built generic verbs — tap a shelf to place a thing — and
+they were not fun. A primitive should be a specific action on a specific object: you scoop a cup
+out of a *bag*, you lift an egg from a *carton* and break it on the rim, you drag a whisk *round*
+the bowl. What she picks up should not be what she pressed; that is the difference between
+cooking and tapping. `dragOut(node, ghostHtml, onLand)` is the tool for it — press a source, and
+something else comes away in your hand. Every one of them also accepts a plain tap (the thing
+flies over by itself), because a three-year-old who has not got dragging yet must not be locked
+out.
+
+**The shell** — `shell(spec, dishHtml, sourceHtml)` lays out every stage the same way: **two
+thirds dish, one third bench**. The food is what she is looking at, so it gets the room; the
+source she takes from and the number she has to read sit together on the bench below, where her
+hands are. The prompt, recipe card and trays are all part of the bench.
+
+**What is in the bowl carries across the stages of one recipe.** `carry.fill` in `js/stages.js`
+is the level, `setFill(root, v, instant)` sets it, and `App.startRecipe` calls
+`Stage.resetCarry()`. Pass `instant` for the level a stage inherits, or the bowl pours itself in
+again every time a stage opens. Contents must be drawn **after** the vessel body and clipped to
+its inside — the bowl is opaque, so a fill drawn first is simply covered.
 
 **A townsperson** — one entry in `CAST` at the bottom of `tools/build_cast.py`, composed from the
 shared kit (hair, hat and outfit are all enumerated `kind` strings), plus one entry in `CAST` in

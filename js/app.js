@@ -98,6 +98,7 @@ const App = (() => {
     document.documentElement.style.setProperty('--recipe', r.color);
     document.documentElement.style.setProperty('--wall', r.scene.wall);
     document.documentElement.style.setProperty('--counter', r.scene.counter);
+    Stage.resetCarry();   // an empty bowl for a new recipe
     show('cook');
     step(0);
   }
@@ -140,7 +141,7 @@ const App = (() => {
     const made = dishesMade();
     $('#cafe-empty').classList.toggle('hidden', made.length > 0);
     counter.innerHTML = made.map(r => `
-      <button class="dish" style="--c:${r.color}">
+      <button class="menu-dish" style="--c:${r.color}">
         <span class="d-icon"><img src="${artUrl(r.icon)}" alt="" draggable="false"></span>
         <span class="d-name">${r.name}</span>
         <span class="d-count">${timesCooked(r.id)}</span>

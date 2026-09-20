@@ -49,7 +49,9 @@ const RECIPES = [
     scene: { wall: '#ffc9a8', pattern: 'tile',    counter: '#c58a52', props: ['tomato', 'basil', 'cheese'] },
     blurb: 'Roll it, top it, bake it.',
     stages: [
-      { id: 'flour',  primitive: 'count-place',   item: 'scoop',     vessel: 'bowl',  say: 'Put {n} scoops of flour in the bowl.' },
+      { id: 'flour',  primitive: 'scoop-bag',     item: 'scoop',  vessel: 'bowl', say: 'Scoop {n} cups of flour into the bowl.' },
+      { id: 'eggs',   primitive: 'crack-eggs',                    vessel: 'bowl', say: 'Crack {n} eggs into the bowl.' },
+      { id: 'stir',   primitive: 'stir-bowl',     tool: 'whisk',  vessel: 'bowl', say: 'Stir the bowl {n} times!' },
       { id: 'roll',   primitive: 'count-gesture', gesture: 'roll', tool: 'rollingpin',   vessel: 'dough', say: 'Roll the dough {n} times!' },
       { id: 'bake',   primitive: 'set-dial',      device: 'oven',                     say: 'Set the oven to {n}.' },
       { id: 'top',    primitive: 'count-place',   item: 'pepperoni', vessel: 'pizza', say: 'Put {n} pepperoni on the pizza.' },

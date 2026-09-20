@@ -65,15 +65,8 @@
       <span class="cook-title"><span id="cook-icon"></span> <span id="cook-name"></span></span>
       <span id="cook-steps" class="steps"></span>
     </header>
-    <p id="stage-prompt" class="prompt"></p>
-    <div class="stage-top">
-      <!-- The target numeral. Stays on screen for the whole stage, and can be
-           tapped to hear the number again. -->
-      <button id="stage-target" class="target"></button>
-      <!-- Fixed ten-frames: always 10 slots each, so the frame never gives the
-           answer away. The second one slides in once the first is full. -->
-      <div id="stage-frames" class="frames"></div>
-    </div>
+    <!-- Each stage builds its own dish / bench split; the prompt, the recipe card
+         and the trays live on the bench. See shell() in js/stages.js. -->
     <div id="stage-area" class="stage-area"></div>
   </section>
 

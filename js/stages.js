@@ -32,6 +32,37 @@ const Stage = (() => {
   const vesselSvg = id => VESSELS[id] || '';
   const replay = (node, cls) => { if (node) { node.classList.remove(cls); void node.offsetWidth; node.classList.add(cls); } };
 
+  // ---------- the shell ----------
+  // Two thirds dish, one third bench. The food is what she is looking at, so it gets
+  // the room; the thing she takes from and the number she has to read sit together
+  // on the bench below, where her hands are.
+  function shell(spec, dishHtml, sourceHtml) {
+    return sceneHtml(spec) + `
+      <div class="dish">${dishHtml}</div>
+      <div class="bench">
+        <p class="prompt" id="stage-prompt"></p>
+        <div class="bench-row">
+          <div class="source">${sourceHtml || ''}</div>
+          <button class="target" id="stage-target"></button>
+          <div class="frames" id="stage-frames"></div>
+        </div>
+      </div>`;
+  }
+
+  // What is in the bowl carries across the stages of one recipe: the flour she
+  // scooped is still there when she cracks the eggs into it. App resets it per recipe.
+  let carry = { fill: 0 };
+  // `instant` for the level a stage inherits: what she poured in last time is
+  // already there, it does not pour itself in again as the stage opens.
+  function setFill(root, v, instant) {
+    carry.fill = Math.max(0, Math.min(1, v));
+    const f = root.querySelector('.v-fill');
+    if (!f) return;
+    if (instant) f.style.transition = 'none';
+    f.style.setProperty('--fill', carry.fill.toFixed(3));
+    if (instant) { void f.getBoundingClientRect(); f.style.transition = ''; }
+  }
+
   // ---------- shared chrome ----------
   function chrome(spec) {
     const n = spec.n;
@@ -112,6 +143,40 @@ const Stage = (() => {
   }
 
   const inside = (rect, x, y) => x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+  const centreOf = node => { const r = node.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; };
+
+  // Take something OUT of a source and carry it somewhere — a cup out of the flour
+  // bag, an egg out of the carton. What you pick up is not what you pressed, which
+  // is the difference between scooping and tapping a shelf.
+  //
+  // A plain tap still works: the thing flies over on its own. A three-year-old who
+  // has not got the hang of dragging yet must not be locked out of the game.
+  function dragOut(node, ghostHtml, onLand) {
+    node.addEventListener('pointerdown', e => {
+      if (e.button) return;
+      e.preventDefault();
+      const ghost = el('div', 'carried', ghostHtml);
+      document.body.appendChild(ghost);
+      const put = (x, y) => { ghost.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`; };
+      const start = { x: e.clientX, y: e.clientY };
+      put(start.x, start.y);
+      node.classList.add('taking');
+      try { node.setPointerCapture(e.pointerId); } catch (err) { /* unsupported */ }
+
+      const move = ev => put(ev.clientX, ev.clientY);
+      const up = ev => {
+        node.removeEventListener('pointermove', move);
+        node.removeEventListener('pointerup', up);
+        node.removeEventListener('pointercancel', up);
+        node.classList.remove('taking');
+        const tapped = Math.hypot(ev.clientX - start.x, ev.clientY - start.y) < 12;
+        onLand({ x: ev.clientX, y: ev.clientY, tapped, ghost, put });
+      };
+      node.addEventListener('pointermove', move);
+      node.addEventListener('pointerup', up);
+      node.addEventListener('pointercancel', up);
+    });
+  }
 
   // The kitchen behind the stage: a patterned wall, a worktop, a board under the
   // vessel and a few props on the side. All CSS gradients plus a handful of <img>,
@@ -161,23 +226,223 @@ const Stage = (() => {
   // they are inside it. Deep-but-narrow vessels get fewer rows and more columns.
   const DEPTH = { bowl: 3, blender: 3, dough: 3, pizza: 3, plate: 2, tray: 2, pan: 2, oven: 2 };
 
+  // ---------- scoop-bag ----------
+  // A sack of flour on the bench. Press it and a heaped cup comes away in your hand;
+  // carry it to the bowl and tip it in. The bowl fills as you go, so the count is
+  // visible in the dish and not only in the tally.
+  function scoopBag(spec, onDone) {
+    const root = area();
+    root.className = 'stage-area scoop-bag v-bowl';
+    root.innerHTML = shell(spec, `<div class="vessel">${vesselSvg('bowl')}</div>`,
+      `<img class="bag" src="${artUrl('flour-bag')}" alt="" draggable="false">`);
+    const c = chrome(spec);
+
+    const dish = root.querySelector('.dish');
+    const vessel = root.querySelector('.vessel');
+    const bag = root.querySelector('.bag');
+    let count = 0, slips = 0, running = true;
+    const started = performance.now();
+    const base = carry.fill;
+    setFill(root, base, true);
+    const demo = idleDemo(root, 'place');
+
+    function pourIn(ghost, at) {
+      ghost.classList.add('pour');
+      Sfx.pour();
+      setTimeout(() => ghost.remove(), 520);
+      count++;
+      demo.poke();
+      c.tally(count);
+      c.countUp(count, at);
+      Fx.crumbs(at.x, at.y, '#fffaf0', 14);
+      replay(vessel, 'bump');
+      // Fill the bowl to about two thirds over the whole stage, whatever the target.
+      setFill(root, base + (1 - base) * 0.66 * (count / spec.n));
+      if (count > spec.n) slips++;
+      if (count === spec.n) { running = false; demo.stop(); finish(spec, slips, started, onDone); }
+    }
+
+    dragOut(bag, `<img src="${artUrl('scoop')}" alt="">`, ({ x, y, tapped, ghost, put }) => {
+      if (!running) { ghost.remove(); return; }
+      const box = vessel.getBoundingClientRect();
+      if (inside(box, x, y)) { pourIn(ghost, { x, y }); return; }
+      if (tapped) {
+        // A tap sends the cup over by itself, then tips it in.
+        const to = centreOf(vessel);
+        ghost.classList.add('fly');
+        put(to.x, to.y);
+        setTimeout(() => { if (running) pourIn(ghost, to); else ghost.remove(); }, 420);
+        return;
+      }
+      ghost.classList.add('drop-away');       // carried somewhere that isn't the bowl
+      setTimeout(() => ghost.remove(), 300);
+    });
+
+    setTimeout(() => c.sayPrompt(), 300);
+    return { stop() { running = false; demo.stop(); } };
+  }
+
+  // ---------- crack-eggs ----------
+  // A carton of six. Lift one out, carry it to the bowl, and it breaks over the rim:
+  // the shell comes apart and the yolk drops in. The carton refills when it empties.
+  function crackEggs(spec, onDone) {
+    const root = area();
+    root.className = 'stage-area crack-eggs v-bowl';
+    const eggs = Array.from({ length: 6 }, (_, i) =>
+      `<img class="egg e${i}" src="${artUrl('egg-whole')}" alt="" draggable="false">`).join('');
+    root.innerHTML = shell(spec, `<div class="vessel">${vesselSvg('bowl')}</div>`,
+      `<span class="carton"><img class="box" src="${artUrl('egg-carton')}" alt="" draggable="false">${eggs}</span>`);
+    const c = chrome(spec);
+
+    const vessel = root.querySelector('.vessel');
+    const shelfEggs = Array.from(root.querySelectorAll('.source .egg'));
+    let count = 0, slips = 0, running = true;
+    const started = performance.now();
+    const base = carry.fill;
+    setFill(root, base, true);
+    const demo = idleDemo(root, 'place');
+
+    function refillIfEmpty() {
+      if (shelfEggs.some(e => !e.classList.contains('gone'))) return;
+      setTimeout(() => shelfEggs.forEach((e, i) => {
+        setTimeout(() => { e.classList.remove('gone'); replay(e, 'arrive'); }, i * 70);
+      }), 260);
+    }
+
+    function crack(at, ghost) {
+      ghost.remove();
+      // Two halves fly apart where it broke, and the yolk goes in.
+      const bits = el('div', 'crack-bits');
+      bits.style.left = at.x + 'px';
+      bits.style.top = at.y + 'px';
+      bits.innerHTML = `<img class="half l" src="${artUrl('shell-l')}" alt="">`
+        + `<img class="half r" src="${artUrl('shell-r')}" alt="">`
+        + `<span class="yolk"></span>`;
+      document.body.appendChild(bits);
+      setTimeout(() => bits.remove(), 700);
+      Sfx.crack();
+      count++;
+      demo.poke();
+      c.tally(count);
+      c.countUp(count, at);
+      replay(vessel, 'bump');
+      setFill(root, base + (1 - base) * 0.5 * (count / spec.n));
+      if (count > spec.n) slips++;
+      if (count === spec.n) { running = false; demo.stop(); finish(spec, slips, started, onDone); }
+    }
+
+    shelfEggs.forEach(eggEl => dragOut(eggEl, `<img src="${artUrl('egg-whole')}" alt="">`,
+      ({ x, y, tapped, ghost, put }) => {
+        if (!running || eggEl.classList.contains('gone')) { ghost.remove(); return; }
+        const box = vessel.getBoundingClientRect();
+        const land = to => { eggEl.classList.add('gone'); refillIfEmpty(); crack(to, ghost); };
+        if (inside(box, x, y)) { land({ x, y }); return; }
+        if (tapped) {
+          const to = centreOf(vessel);
+          ghost.classList.add('fly');
+          put(to.x, to.y);
+          setTimeout(() => { if (running) land(to); else ghost.remove(); }, 420);
+          return;
+        }
+        ghost.classList.add('drop-away');
+        setTimeout(() => ghost.remove(), 300);
+      }));
+
+    setTimeout(() => c.sayPrompt(), 300);
+    return { stop() { running = false; demo.stop(); } };
+  }
+
+  // ---------- stir-bowl ----------
+  // Drag the whisk round and round. A whole turn is one stir, so it is the circling
+  // that counts rather than a tap — and it is forgiving: 300 degrees will do.
+  function stirBowl(spec, onDone) {
+    const root = area();
+    root.className = 'stage-area stir-bowl v-bowl';
+    root.innerHTML = shell(spec,
+      `<div class="vessel">${vesselSvg('bowl')}
+         <img class="whisk" src="${artUrl(spec.tool || 'whisk')}" alt="" draggable="false">
+       </div>`, '');
+    const c = chrome(spec);
+
+    const dish = root.querySelector('.dish');
+    const vessel = root.querySelector('.vessel');
+    const whisk = root.querySelector('.whisk');
+    const fillEl = root.querySelector('.v-fill');
+    let count = 0, slips = 0, running = true;
+    let turning = false, lastA = 0, swept = 0, angle = 0;
+    const started = performance.now();
+    setFill(root, Math.max(carry.fill, 0.45), true);
+    const demo = idleDemo(root, 'stir');
+
+    const TURN = 300;                          // degrees that count as one stir
+    // The whisk goes round inside the bowl, so the orbit is a fraction of the bowl,
+    // not of the whisk's own height. One layout read, at stage start.
+    const R = Math.round(vessel.getBoundingClientRect().width * 0.19);
+    const place = deg => { whisk.style.transform = `translate(-50%, -50%) rotate(${deg}deg) translateY(${-R}px)`; };
+    place(0);
+
+    const angleAt = (x, y) => {
+      const c0 = centreOf(vessel);
+      return Math.atan2(y - c0.y, x - c0.x) * 180 / Math.PI;
+    };
+
+    function begin(e) {
+      if (!running) return;
+      e.preventDefault();
+      turning = true;
+      lastA = angleAt(e.clientX, e.clientY);
+      whisk.classList.add('held');
+      demo.poke();
+    }
+    function turn(e) {
+      if (!turning || !running) return;
+      const a = angleAt(e.clientX, e.clientY);
+      let d = a - lastA;
+      while (d > 180) d -= 360;                // shortest way round, so the wrap at
+      while (d < -180) d += 360;               // ±180 does not read as a huge sweep
+      lastA = a;
+      angle += d;
+      swept += Math.abs(d);
+      place(angle);
+      if (swept >= TURN) {
+        swept -= TURN;
+        count++;
+        c.tally(count);
+        c.countUp(count, { x: e.clientX, y: e.clientY });
+        Sfx.stir();
+        replay(vessel, 'react');
+        if (fillEl) replay(fillEl, 'slosh');
+        if (count > spec.n) slips++;
+        if (count === spec.n) { running = false; turning = false; demo.stop(); finish(spec, slips, started, onDone); }
+      }
+    }
+    const end = () => { turning = false; whisk.classList.remove('held'); };
+
+    dish.addEventListener('pointerdown', begin);
+    dish.addEventListener('pointermove', turn);
+    dish.addEventListener('pointerup', end);
+    dish.addEventListener('pointercancel', end);
+
+    setTimeout(() => c.sayPrompt(), 300);
+    return { stop() { running = false; demo.stop(); } };
+  }
+
   // ---------- count-place ----------
   // Read the numeral, put that many things in the vessel. The spine of the game:
   // the only primitive that trains "see numeral → know quantity" inside the cooking
   // flow itself.
   function countPlace(spec, onDone) {
-    const c = chrome(spec);
     const root = area();
     // The vessel class carries where inside the art items may land (see the
     // .v-* rules in style.css) — geometry belongs with the art, not here.
     root.className = 'stage-area count-place v-' + spec.vessel;
-    root.innerHTML = sceneHtml(spec) + `
-      <div class="vessel">${vesselSvg(spec.vessel)}<div class="drop"></div></div>
-      <div class="supply"></div>`;
+    root.innerHTML = shell(spec,
+      `<div class="vessel">${vesselSvg(spec.vessel)}<div class="drop"></div></div>`,
+      `<button class="item supply-item">${itemImg(spec.item)}</button>`);
+    const c = chrome(spec);
 
     const vessel = root.querySelector('.vessel');
     const drop = root.querySelector('.drop');
-    const supply = root.querySelector('.supply');
     // Lay the vessel's contents out to suit the count AND the vessel's shape: two
     // big scoops read as two big scoops, twenty read as a full bowl. Rows are capped
     // per vessel because a bowl seen from the side narrows towards the bottom — a
@@ -230,12 +495,10 @@ const Stage = (() => {
       }
     }
 
-    // One source on the tray. Tapping it or dragging from it both place an item.
-    const src = el('button', 'item supply-item', itemImg(spec.item));
-    draggable(src, { onDrop: ({ x, y, tapped }) => {
+    // One source on the bench. Tapping it or dragging from it both place an item.
+    draggable(root.querySelector('.supply-item'), { onDrop: ({ x, y, tapped }) => {
       if (tapped || inside(drop.getBoundingClientRect(), x, y)) add({ x, y });
     } });
-    supply.appendChild(src);
 
     setTimeout(() => c.sayPrompt(), 300);
     return { stop() { running = false; demo.stop(); } };
@@ -246,18 +509,18 @@ const Stage = (() => {
   // actually travels — a rolling pin rolls across the dough and the dough spreads
   // under it, a spoon goes round the bowl, a spatula tosses the pancake.
   function countGesture(spec, onDone) {
-    const c = chrome(spec);
     const root = area();
     root.className = 'stage-area count-gesture g-' + spec.gesture + ' v-' + spec.vessel;
     // The rig translates, the tool inside it spins: a rolling pin should turn while
     // the hand holding it does not.
-    root.innerHTML = sceneHtml(spec) + `
+    root.innerHTML = shell(spec, `
       <div class="vessel big">${vesselSvg(spec.vessel)}
         <span class="tool-rig">
           <img class="tool" src="${artUrl(spec.tool)}" alt="" draggable="false">
           <img class="grip" src="${artUrl('hand-grip')}" alt="" draggable="false">
         </span>
-      </div>`;
+      </div>`, '');
+    const c = chrome(spec);
 
     const vessel = root.querySelector('.vessel');
     const rig = root.querySelector('.tool-rig');
@@ -292,18 +555,18 @@ const Stage = (() => {
   // watches numbers change. Turning a dial to a numeral she has read is active
   // recognition, which is the actual target skill.
   function setDial(spec, onDone) {
-    const c = chrome(spec);
     const root = area();
     root.className = 'stage-area set-dial d-' + spec.device;
-    root.innerHTML = sceneHtml(spec) + `
+    root.innerHTML = shell(spec, `
       <div class="vessel big">${vesselSvg(spec.device)}
         <span class="steam"><i></i><i></i><i></i></span>
-      </div>
+      </div>`, `
       <div class="dial">
         <button class="knob down" aria-label="down">−</button>
         <div class="readout"><span>0</span></div>
         <button class="knob up" aria-label="up">+</button>
-      </div>`;
+      </div>`);
+    const c = chrome(spec);
 
     const read = root.querySelector('.readout span');
     let value = 0, slips = 0, running = true, settle = 0;
@@ -398,11 +661,10 @@ const Stage = (() => {
   }
 
   function cutInto(spec, onDone) {
-    const c = chrome(spec);
     const root = area();
     const strip = spec.shape === 'strip';
     root.className = 'stage-area cut-into ' + (strip ? 'c-strip' : 'c-wedge');
-    root.innerHTML = sceneHtml(spec) + `
+    root.innerHTML = shell(spec, `
       <div class="vessel big cutting">
         ${strip ? vesselSvg('plate') : ''}
         <svg class="pieces" viewBox="0 0 200 140" aria-hidden="true"></svg>
@@ -410,7 +672,8 @@ const Stage = (() => {
           <img class="tool knife" src="${artUrl('knife')}" alt="" draggable="false">
           <img class="grip" src="${artUrl('hand-grip')}" alt="" draggable="false">
         </span>
-      </div>`;
+      </div>`, '');
+    const c = chrome(spec);
 
     const vessel = root.querySelector('.vessel');
     const pieces = root.querySelector('.pieces');
@@ -456,23 +719,22 @@ const Stage = (() => {
   // The strongest mechanic in the design: everyone needs one, and the reason to care
   // is obvious. One-to-one correspondence with a purpose.
   function match1to1(spec, onDone) {
-    const c = chrome(spec);
     const root = area();
     root.className = 'stage-area match';
     // A different line-up each time, and nobody twice while the cast can cover it.
     const pool = CAST.slice();
     for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
     const guests = Array.from({ length: spec.n }, (_, i) => pool[i % pool.length]);
-    root.innerHTML = sceneHtml(spec) + `
+    root.innerHTML = shell(spec, `
       <div class="guests">${guests.map((g, i) => `
         <div class="guest" data-i="${i}" style="--c:${g.color}">
           <span class="who"><img src="${g.img}" alt="${g.name}" draggable="false"></span>
           <span class="plate"></span>
           <span class="name">${g.name}</span>
-        </div>`).join('')}</div>
-      <div class="supply"></div>`;
+        </div>`).join('')}</div>`,
+      `<button class="item supply-item">${itemImg(spec.item)}</button>`);
+    const c = chrome(spec);
 
-    const supply = root.querySelector('.supply');
     const seats = Array.from(root.querySelectorAll('.guest'));
     let served = 0, slips = 0, running = true;
     const started = performance.now();
@@ -498,18 +760,19 @@ const Stage = (() => {
       serve(seat, { x: e.clientX, y: e.clientY });
     }));
 
-    const src = el('button', 'item supply-item', itemImg(spec.item));
-    draggable(src, { onDrop: ({ x, y }) => {
+    draggable(root.querySelector('.supply-item'), { onDrop: ({ x, y }) => {
       const hit = seats.find(s => inside(s.getBoundingClientRect(), x, y));
       if (hit) serve(hit, { x, y });
     } });
-    supply.appendChild(src);
 
     setTimeout(() => c.sayPrompt(), 300);
     return { stop() { running = false; demo.stop(); } };
   }
 
   const PRIMITIVES = {
+    'scoop-bag': scoopBag,
+    'crack-eggs': crackEggs,
+    'stir-bowl': stirBowl,
     'count-place': countPlace,
     'count-gesture': countGesture,
     'set-dial': setDial,
@@ -520,6 +783,9 @@ const Stage = (() => {
   // What each primitive can sensibly express. Cutting a sandwich into one piece is
   // not a cut, and nobody wants to hand out seventeen plates.
   const LIMITS = {
+    'scoop-bag': { min: 1, max: 20 },
+    'crack-eggs': { min: 1, max: 12 },     // the carton holds six and refills
+    'stir-bowl': { min: 2, max: 10 },      // twenty turns of a whisk is a chore
     'count-place': { min: 1, max: 20 },
     'count-gesture': { min: 2, max: 12 },
     'set-dial': { min: 1, max: 20 },
@@ -529,6 +795,9 @@ const Stage = (() => {
 
   return {
     limitsFor: p => LIMITS[p] || { min: 1, max: 20 },
+    // What is in the bowl carries between the stages of one recipe, not between
+    // recipes — App calls this when a new one starts.
+    resetCarry() { carry = { fill: 0 }; },
     play(spec, onDone) {
       this.stop();
       area().classList.remove('done');
