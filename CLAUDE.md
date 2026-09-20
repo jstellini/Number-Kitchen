@@ -103,6 +103,12 @@ something else comes away in your hand. Every one of them also accepts a plain t
 flies over by itself), because a three-year-old who has not got dragging yet must not be locked
 out.
 
+**Sizes.** The vessel fills its zone — the dish is what she is looking at, so it gets the room.
+Utensil widths are a percentage **of the vessel**, so enlarging a vessel enlarges its tools too;
+change one and re-check the other. A utensil drawn as a wide head in a square box (the rolling
+pin, the spatula) scales its *thickness* with its width, so past a point it stops looking bigger
+and starts looking fatter than the food — those two sit lower than the thin tools by design.
+
 **The shell** — `shell(spec, dishHtml, sourceHtml)` lays out every stage the same way: **two
 thirds dish, one third bench**. The food is what she is looking at, so it gets the room; the
 source she takes from and the number she has to read sit together on the bench below, where her

@@ -377,8 +377,12 @@ const Stage = (() => {
     const TURN = 300;                          // degrees that count as one stir
     // The whisk goes round inside the bowl, so the orbit is a fraction of the bowl,
     // not of the whisk's own height. One layout read, at stage start.
-    const R = Math.round(vessel.getBoundingClientRect().width * 0.19);
-    const place = deg => { whisk.style.transform = `translate(-50%, -50%) rotate(${deg}deg) translateY(${-R}px)`; };
+    const R = Math.round(vessel.getBoundingClientRect().width * 0.12);
+    // Orbit without spin: the counter-rotation keeps the whisk upright as it goes
+    // round. Without it the handle swings down through the side of the bowl.
+    const place = deg => {
+      whisk.style.transform = `translate(-50%, -50%) rotate(${deg}deg) translateY(${-R}px) rotate(${-deg}deg)`;
+    };
     place(0);
 
     const angleAt = (x, y) => {

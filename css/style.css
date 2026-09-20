@@ -232,9 +232,9 @@ html, body {
 /* The vessel stands on the bench: anchored to the bottom of the dish zone. */
 .vessel {
   position: absolute; left: 50%; bottom: 2%;
-  width: min(52%, 410px); transform: translateX(-50%);
+  width: min(66%, 640px); transform: translateX(-50%);
 }
-.vessel.big { bottom: 4%; width: min(48%, 380px); }
+.vessel.big { bottom: 3%; width: min(62%, 600px); }
 .vessel svg { width: 100%; height: auto; display: block; }
 
 /* ---------- the dressed kitchen ----------
@@ -275,7 +275,7 @@ html, body {
 }
 /* The board the food sits on. Appliances don't get one. */
 .scene .board {
-  position: absolute; left: 50%; top: auto; bottom: 2%; width: min(62%, 600px); height: 46%;
+  position: absolute; left: 50%; top: auto; bottom: 2%; width: min(78%, 760px); height: 56%;
   transform: translateX(-50%);
   border-radius: 28px;
   background-color: #e8c89a;
@@ -405,7 +405,7 @@ html, body {
 .count-gesture .vessel { cursor: grab; }
 
 /* Rolling pin travels across the dough and keeps turning on the way back. */
-.g-roll .tool-rig { width: 62%; left: 19%; top: 24%; }
+.g-roll .tool-rig { width: 70%; left: 15%; top: 8%; }
 @keyframes roll-go {
   0%   { transform: translateX(-30%); }
   55%  { transform: translateX(30%); }
@@ -414,7 +414,7 @@ html, body {
 @keyframes pin-spin { to { transform: rotate(600deg); } }
 .g-roll .tool.spin { animation: pin-spin .6s ease-in-out; }
 .g-roll .tool-rig.go { animation: roll-go .6s ease-in-out; }
-.g-roll   .grip { left: 57%; top: 29%; width: 33%; }
+.g-roll   .grip { left: 58%; top: 30%; width: 26%; }
 .g-stir   .grip { left: 31%; top: 50%; width: 40%; }
 .g-whisk  .grip { left: 30%; top: 8%;  width: 40%; }
 .g-spread .grip { left: 19%; top: 54%; width: 46%; }
@@ -423,11 +423,11 @@ html, body {
 .v-blob { transform: scaleX(var(--spread, 1)); transition: transform .35s ease; }
 
 /* Spoon swings right round the bowl — origin below it, so a rotate is an orbit. */
-.g-stir .tool-rig { width: 20%; left: 40%; top: 2%; transform-origin: 50% 210%; }
+.g-stir .tool-rig { width: 40%; left: 30%; top: 4%; transform-origin: 50% 150%; }
 @keyframes stir-go { to { transform: rotate(360deg); } }
 .g-stir .tool-rig.go { animation: stir-go .6s ease-in-out; }
 
-.g-whisk .tool-rig { width: 26%; left: 37%; top: 0%; }
+.g-whisk .tool-rig { width: 51%; left: 24.5%; top: 2%; }
 @keyframes whisk-go {
   0%, 100% { transform: translateX(0) rotate(0deg); }
   20% { transform: translateX(-9%) rotate(-10deg); }
@@ -436,14 +436,14 @@ html, body {
 }
 .g-whisk .tool-rig.go { animation: whisk-go .5s ease-in-out; }
 
-.g-spread .tool-rig { width: 22%; left: 39%; top: 8%; }
+.g-spread .tool-rig { width: 43%; left: 28.5%; top: 10%; }
 @keyframes spread-go {
   0%   { transform: translateX(-38%) rotate(-10deg); }
   100% { transform: translateX(38%) rotate(10deg); }
 }
 .g-spread .tool-rig.go { animation: spread-go .5s ease-in-out; }
 
-.g-flip .tool-rig { width: 30%; left: 35%; top: 10%; }
+.g-flip .tool-rig { width: 40%; left: 30%; top: 16%; }
 @keyframes flip-go {
   0%, 100% { transform: translateY(0) rotate(0deg); }
   40% { transform: translateY(-34%) rotate(-28deg); }
@@ -510,7 +510,7 @@ html, body {
 .c-strip .pieces { position: absolute; inset: 0; height: 100%; }
 @keyframes split { 40% { transform: scale(1.035); } }
 .pieces.split { animation: split .28s ease; }
-.cut-into .knife-rig { width: 17%; left: 41.5%; top: -8%; opacity: 0; }
+.cut-into .knife-rig { width: 34%; left: 33%; top: -14%; opacity: 0; }
 .cut-into .knife-rig .grip { left: 2%; top: 50%; width: 66%; }
 @keyframes knife-go {
   0%   { opacity: 0; transform: translateY(-30%) rotate(-14deg); }
@@ -736,7 +736,7 @@ html, body {
 .stir-bowl .dish { cursor: grab; touch-action: none; }
 .stir-bowl .whisk {
   /* Inside the vessel, at the middle of what is in the bowl. */
-  position: absolute; left: 50%; top: 58%; width: 26%;
+  position: absolute; left: 50%; top: 56%; width: 50%;
   pointer-events: none; z-index: 2;
   transform: translate(-50%, -50%);
 }
