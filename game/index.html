@@ -32,14 +32,15 @@
 <!-- Everything lives on one 1024×768 stage, scaled to fit (see Kit.fit). -->
 <div id="stage">
 
-  <!-- The kitchen is shared by every screen: a tiled wall, a window, a shelf and the worktop. -->
+  <!-- The room is shared by every screen: a striped wall, a window, a shelf and the worktop. -->
   <div class="kitchen">
     <div class="wall"></div>
     <div class="prop prop-window-sky"></div>
-    <div id="peek" class="peek"></div>
     <div class="prop prop-window"></div>
     <div class="prop prop-shelf"></div>
     <div class="counter"></div>
+    <!-- Cooking happens top-down on a tablecloth in the recipe's colour. -->
+    <div class="cloth"></div>
   </div>
 
   <section id="screen-start" class="screen active">
@@ -58,6 +59,8 @@
     <div id="stage-area" class="stage-area"></div>
     <button class="round-btn back" data-go="menu" aria-label="Home"></button>
     <div id="dots" class="dots"></div>
+    <!-- The customer pops up from the corner to cheer each finished step. -->
+    <div id="peek" class="peek"></div>
   </section>
 
   <section id="screen-done" class="screen">

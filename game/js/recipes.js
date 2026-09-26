@@ -1,16 +1,17 @@
-// The recipe book. A recipe is data: which dish it makes and its steps in order, each naming a
-// step from steps.js plus that step's details. A new recipe that reuses existing steps needs
-// no new code. Every recipe opens with the customer's order, added by App.
+// The recipe book. A recipe is data: which dish it makes, the colour of its tablecloth, and its
+// steps in order, each naming a step from steps.js plus that step's details. A new recipe that
+// reuses existing steps needs no new code. Every recipe opens with the customer's order, added by App.
 const RECIPES = [
   {
     id: 'pizza',
     dish: 'pizza',
+    cloth: '#9fbdf2',
     steps: [
       { do: 'mix', vessel: 'bowl', items: ['flour', 'milk', 'egg'] },
       { do: 'stir', tool: 'spoon', into: 'dough' },
       { do: 'roll' },
       { do: 'sauce' },
-      { do: 'decorate', items: ['pepperoni', 'mushroom', 'olive', 'basil', 'cheese'] },
+      { do: 'decorate', items: ['pepperoni', 'tomato', 'cheese', 'basil', 'mushroom'] },
       { do: 'bake' },
       { do: 'cut' },
       { do: 'serve' },
@@ -19,6 +20,7 @@ const RECIPES = [
   {
     id: 'cupcakes',
     dish: 'cupcakes',
+    cloth: '#f5a3c7',
     steps: [
       { do: 'mix', vessel: 'bowl', items: ['flour', 'sugar', 'egg', 'milk'] },
       { do: 'stir', tool: 'whisk', into: 'batter' },
@@ -32,6 +34,7 @@ const RECIPES = [
   {
     id: 'smoothie',
     dish: 'smoothie',
+    cloth: '#8fd9c4',
     steps: [
       { do: 'mix', vessel: 'blender', items: ['banana', 'milk', 'strawberry', 'blueberry'] },
       { do: 'blend' },

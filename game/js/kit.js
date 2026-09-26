@@ -121,7 +121,7 @@ const Hint = (() => {
   el.draggable = false;
   Kit.stage.appendChild(el);
   let path = null, timer = 0, anim = null;
-  const TIP = { x: 44 * 110 / 140, y: 10 * 110 / 140 };   // fingertip, at the 110px drawn width
+  const TIP = { x: 25 * 120 / 160, y: 24 * 120 / 160 };   // fingertip, at the 120px drawn width
 
   function play() {
     if (!path) return;
@@ -159,6 +159,7 @@ const Fx = (() => {
   const cv = document.getElementById('fx');
   const cx = cv.getContext('2d');
   const COLORS = ['#ff5c8a', '#ffd23f', '#5ab4ee', '#7ad47c', '#ff9d3c', '#b98cf5'];
+  const TWINKLE = ['#ffffff', '#ffffff', '#fff6c2', '#ffe066'];
   let parts = [], running = false;
 
   function size() {
@@ -179,9 +180,10 @@ const Fx = (() => {
       cx.translate(p.x, p.y); cx.rotate(p.rot);
       cx.fillStyle = p.c;
       if (p.star) {
+        // a four-point twinkle
         cx.beginPath();
-        for (let i = 0; i < 10; i++) {
-          const r = i % 2 ? p.s * 0.45 : p.s, a = i * Math.PI / 5;
+        for (let i = 0; i < 8; i++) {
+          const r = i % 2 ? p.s * 0.28 : p.s, a = i * Math.PI / 4;
           cx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
         }
         cx.fill();
@@ -201,7 +203,7 @@ const Fx = (() => {
     for (let i = 0; i < n; i++) {
       const a = Math.random() * Math.PI * 2, v = 2 + Math.random() * 5;
       parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 2, g: 0.12, rot: 0, vr: 0.1,
-        s: 6 + Math.random() * 8, c: Kit.pick(COLORS), life: 40 + Math.random() * 20, star: true });
+        s: 8 + Math.random() * 10, c: Kit.pick(TWINKLE), life: 40 + Math.random() * 20, star: true });
     }
     go();
   }

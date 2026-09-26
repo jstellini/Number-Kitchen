@@ -10,6 +10,7 @@ const App = (() => {
   function show(name) {
     document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === `screen-${name}`));
     document.querySelector('.kitchen').dataset.screen = name;
+    if (name !== 'cook') document.querySelector('.kitchen').dataset.scene = 'room';
     current = name;
   }
 
@@ -87,8 +88,10 @@ const App = (() => {
     $('#dots').innerHTML = index < 0 ? '' : recipe.steps.map((_, i) =>
       `<i class="${i < index ? 'done' : i === index ? 'now' : ''}"></i>`).join('');
     const spec = specAt(index);
-    // The customer watches through the window while she cooks, and cheers each step.
-    document.querySelector('.kitchen').dataset.peek = spec.do === 'order' || spec.do === 'serve' ? 'off' : 'on';
+    // The customer is met in the room; the cooking happens on the tablecloth.
+    const kitchen = document.querySelector('.kitchen');
+    kitchen.dataset.scene = spec.do === 'order' || spec.do === 'serve' ? 'room' : 'table';
+    kitchen.style.setProperty('--cloth', recipe.cloth);
     step = Steps[spec.do](root, meal, () => {
       step = null;
       if (spec.do !== 'order' && spec.do !== 'serve') cheer();
@@ -103,16 +106,17 @@ const App = (() => {
     Hint.set(null);
   }
 
-  // ---------- the customer at the window ----------
+  // ---------- the customer popping up to cheer ----------
   function peek(who) {
     $('#peek').innerHTML = `<div class="person">${Art.img(who, 'idle')}${Art.img(who + '-happy', 'happy')}</div>`;
   }
   function cheer() {
     const p = $('#peek .person');
     if (!p) return;
-    p.classList.add('glad', 'hop');
+    $('#peek').classList.add('up');
+    p.classList.add('glad');
     Sfx.yay();
-    setTimeout(() => p.classList.remove('glad', 'hop'), 1300);
+    setTimeout(() => { $('#peek').classList.remove('up'); p.classList.remove('glad'); }, 1100);
   }
 
   // ---------- done ----------

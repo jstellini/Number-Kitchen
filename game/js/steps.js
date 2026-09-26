@@ -550,13 +550,17 @@ const Steps = (() => {
     const MAX = 30, ENOUGH = 5;
     if (dish.board) board(root, C.x, C.y);
     const { el } = foodAt(root, meal, C.x, C.y, W);
-    const spots = [[760, 360], [905, 360], [760, 510], [905, 510], [760, 660]];
+    const spots = [[765, 372], [915, 372], [765, 518], [915, 518], [765, 664]];
     let finished = false;
 
+    // The toppings wait in round slots on a cream panel, the way Bimi lays them out.
+    const panel = document.createElement('div');
+    panel.className = 'picker';
+    root.appendChild(panel);
     const tick = document.createElement('button');
     tick.className = 'round-btn tick hidden';
     tick.innerHTML = Kit.icon('tick');
-    tick.style.cssText = 'left:858px;top:614px';
+    tick.style.cssText = 'left:855px;top:604px';
     root.appendChild(tick);
     tap(tick, () => {
       if (finished) return;
@@ -567,10 +571,7 @@ const Steps = (() => {
 
     spec.items.forEach((kind, i) => {
       const [x, y] = spots[i];
-      const bowl = put(Art.img('dish') +
-        [[-30, -8, -20], [22, -12, 30], [-4, -26, 5]].map(([dx, dy, r]) =>
-          Art.img(kind, 'pile', `left:${45 + dx / 1.5}%;top:${38 + dy / 1.5}%;transform:rotate(${r}deg)`)).join(''),
-        x, y, 140, 'dish');
+      const bowl = put(Art.img(kind), x, y, 128, 'dish slot');
       root.appendChild(bowl);
 
       let ghost = null;
@@ -581,6 +582,7 @@ const Steps = (() => {
             return false;
           }
           Sfx.pick();
+          bowl.classList.add('picked');
           ghost = put(Art.img(kind), p.x, p.y, 76, 'ghost');
           root.appendChild(ghost);
           moveTo(ghost, { x: p.x, y: p.y - 30 }, 'scale(1.2)');
@@ -588,6 +590,7 @@ const Steps = (() => {
         move: p => moveTo(ghost, { x: p.x, y: p.y - 30 }, 'scale(1.2)'),
         end: async (p, moved) => {
           const g = ghost; ghost = null;
+          bowl.classList.remove('picked');
           const pl = dish.place(moved ? toDish({ x: p.x, y: p.y - 30 }, C, W) : dish.spot(kind), kind);
           if (!pl) {
             // dropped off the food: it goes back in its dish
@@ -606,8 +609,8 @@ const Steps = (() => {
     });
 
     Hint.set(() => {
-      if (meal.state.toppings.length >= ENOUGH) return [{ x: 910, y: 660 }, { x: 905, y: 655 }];
-      return [{ x: 760, y: 350 }, C];
+      if (meal.state.toppings.length >= ENOUGH) return [{ x: 915, y: 664 }, { x: 912, y: 660 }];
+      return [{ x: 765, y: 372 }, C];
     });
     return { stop() { finished = true; } };
   }

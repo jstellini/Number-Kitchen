@@ -1,9 +1,10 @@
 // All the game's art, drawn in code.
 //
-// The look: flat, rounded shapes with no outlines. Each form is shaded by drawing it once in a
-// darker tone and again in its own colour, nudged up-left and clipped to itself, which leaves a
-// crescent of shade along the lower right. A soft white gloss sits top-left. Shadows are plain
-// translucent ellipses, never filters. See docs/ART.md.
+// The look (after Bimi Boo): rounded candy shapes with an outline tinted from each shape's own
+// colour, never black. Each form is shaded by drawing it once in a darker tone and again in its
+// own colour, nudged up-left and clipped to itself, which leaves a crescent of shade along the
+// lower right. A soft white gloss sits top-left. Shadows are plain translucent ellipses, never
+// filters. See docs/ART.md.
 //
 // Two kinds of output:
 //   Art.url(name)  — for anything that repeats (a topping, a tool, a face). Turned into a blob
@@ -28,12 +29,17 @@ const Art = (() => {
   let uid = 0;
   const id = p => `${p}${++uid}`;
 
-  // The house shading. k = how far the lit face slides up-left (px in the art's own units).
+  // The outline colour for a fill: the same hue, much deeper.
+  const ink = c => mix(c, '#4a1d33', 0.5);
+
+  // The house shading. k = how far the lit face slides up-left, w = outline width (both in the
+  // art's own units). w: 0 for no outline.
   function toon(shape, fill, o = {}) {
-    const k = o.k ?? 6, cid = id('t');
+    const k = o.k ?? 6, cid = id('t'), w = o.w ?? 3.5;
     const sh = o.shade || dark(fill, o.t ?? 0.22);
     return `<clipPath id="${cid}">${shape('#000')}</clipPath>${shape(sh)}` +
-      `<g clip-path="url(#${cid})"><g transform="translate(${-k * 0.7} ${-k})">${shape(fill)}</g></g>`;
+      `<g clip-path="url(#${cid})"><g transform="translate(${-k * 0.7} ${-k})">${shape(fill)}</g></g>` +
+      (w ? shape('none').replace(/\/>$/, ` stroke="${o.ink || ink(o.shade ? sh : fill)}" stroke-width="${w}" stroke-linejoin="round"/>`) : '');
   }
   const gloss = (cx, cy, rx, ry, rot = -30, op = 0.55) =>
     `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="#fff" opacity="${op}" transform="rotate(${rot} ${cx} ${cy})"/>`;
@@ -48,10 +54,12 @@ const Art = (() => {
   const D = {};
 
   // ---- toppings ----
+  // Salami, as Bimi draws it: pinkish red with pale speckles.
   D.pepperoni = () => svg(100, 100,
-    toon(C(50, 50, 40), '#e4483a', { k: 5 }) +
-    [[36, 40, 5], [60, 34, 4], [62, 60, 6], [40, 64, 4.5], [50, 50, 3]].map(([x, y, r]) => C(x, y, r)('#bf3226')).join('') +
-    gloss(36, 32, 12, 6, -30, 0.5));
+    toon(C(50, 50, 42), '#e05a66', { k: 5 }) +
+    [[34, 40, 4], [56, 30, 3], [66, 52, 4.5], [44, 62, 3.5], [52, 46, 2.5], [30, 58, 2.5], [60, 70, 3], [70, 36, 2.5], [40, 28, 2]]
+      .map(([x, y, r]) => C(x, y, r)('#f7a8b0')).join('') +
+    gloss(34, 30, 11, 5, -30, 0.5));
 
   D.mushroom = () => svg(100, 100,
     toon(P('M12 54C12 22 88 22 88 54C88 62 80 64 70 62L66 62C66 76 68 84 62 90L38 90C32 84 34 76 34 62L30 62C20 64 12 62 12 54Z'), '#f6e6cf', { k: 5 }) +
@@ -63,14 +71,20 @@ const Art = (() => {
     toon(P('M18 50a32 32 0 1 0 64 0a32 32 0 1 0-64 0ZM38 50a12 12 0 1 1 24 0a12 12 0 1 1-24 0Z', 'fill-rule="evenodd" clip-rule="evenodd"'), '#46425a', { k: 5 }) +
     gloss(34, 36, 9, 5, -35, 0.45));
 
-  D.basil = () => svg(100, 100, `<g transform="rotate(25 50 50)">` +
-    toon(P('M50 8C80 24 86 64 50 92C14 64 20 24 50 8Z'), '#46b04a', { k: 5 }) +
-    line('M50 18L50 84', '#8ad98a', 3) + line('M50 40L36 30M50 40L64 30M50 58L34 48M50 58L66 48', '#8ad98a', 2.5) +
-    `</g>`);
+  // A sprig: three leaves on a little stem.
+  const leaf = (x, y, rot, c) => `<g transform="rotate(${rot} ${x} ${y})">` +
+    toon(P(`M${x} ${y}C${x + 17} ${y - 8} ${x + 19} ${y - 30} ${x} ${y - 40}C${x - 19} ${y - 30} ${x - 17} ${y - 8} ${x} ${y}Z`), c, { k: 3, w: 3 }) +
+    line(`M${x} ${y - 4}L${x} ${y - 32}`, light(c, 0.4), 2.2) + `</g>`;
+  D.basil = () => svg(100, 100,
+    line('M50 92L50 58', '#3f8f3a', 5) +
+    leaf(50, 60, -58, '#4cb84e') + leaf(50, 60, 58, '#4cb84e') + leaf(50, 56, 0, '#58c85a'));
 
-  D.cheese = () => svg(100, 100,
-    [[20, 26, -20], [48, 46, 15], [22, 58, 35], [58, 18, -40]].map(([x, y, r]) =>
-      toon(R(x, y, 34, 14, 7, `transform="rotate(${r} ${x + 17} ${y + 7})"`), '#ffd23f', { k: 3 })).join(''));
+  // A block of cheese with holes.
+  D.cheese = () => svg(100, 100, `<g transform="rotate(-12 50 50)">` +
+    toon(R(14, 14, 72, 72, 14), '#ffd84d', { k: 5 }) +
+    [[34, 34, 8], [62, 30, 5], [56, 58, 9], [30, 64, 5], [74, 70, 4]].map(([x, y, r]) =>
+      C(x, y, r)('#f5b52e') + C(x - r * 0.25, y - r * 0.25, r * 0.6)('#ffe27a')).join('') +
+    gloss(26, 22, 9, 4, 0, 0.6) + `</g>`);
 
   D.tomato = () => svg(100, 100,
     toon(C(50, 50, 38), '#ff5a4e', { k: 5 }) + C(50, 50, 29)('#ff8a78') +
@@ -144,15 +158,17 @@ const Art = (() => {
     line('M50 170L50 16', '#dde5ea', 6));
 
   // ---- the hand that demonstrates (never a cursor) ----
-  // Index finger up the left edge, the other fingers curled, the thumb tucked across the front.
-  // The fingertip is at (44, 10); Hint relies on that.
-  D.hand = () => svg(140, 190,
-    toon(R(40, 150, 72, 40, 12), '#58b3f6', { k: 4 }) +
-    toon(R(28, 6, 32, 104, 16), '#ffd0ae', { k: 5, shade: '#eca77f' }) +
-    toon(R(24, 70, 100, 92, 40), '#ffd0ae', { k: 6, shade: '#eca77f' }) +
-    line('M64 74Q66 90 64 104M88 76Q90 92 88 106', '#eca77f', 3) +
-    toon(R(34, 104, 64, 26, 13, 'transform="rotate(-12 66 117)"'), '#ffd0ae', { k: 3, shade: '#eca77f' }) +
-    `<ellipse cx="44" cy="18" rx="8" ry="6" fill="#fff" opacity=".6"/>`);
+  // Beige, with a purple cuff and a button, leaning so it points up and to the left. The index
+  // finger runs up the left edge, the others are curled, the thumb is tucked across the front.
+  // The fingertip is at (25, 24) in the 160×200 box; Hint relies on that.
+  D.hand = () => svg(160, 200, `<g transform="translate(10 0) rotate(-20 70 100)">` +
+    toon(R(28, 6, 32, 104, 16), '#f6dfbd', { k: 4, shade: '#e2bf93' }) +
+    toon(R(24, 70, 100, 92, 40), '#f6dfbd', { k: 5, shade: '#e2bf93' }) +
+    line('M64 74Q66 90 64 104M88 76Q90 92 88 106', '#c99f70', 3) +
+    toon(R(34, 104, 64, 26, 13, 'transform="rotate(-12 66 117)"'), '#f6dfbd', { k: 3, shade: '#e2bf93' }) +
+    `<ellipse cx="44" cy="17" rx="9" ry="6" fill="#fff"/>` +
+    toon(R(36, 148, 80, 44, 14), '#9a62c4', { k: 4 }) + toon(C(76, 170, 8), '#6e3f96', { k: 2, w: 2 }) +
+    `</g>`);
 
   // ---- counter furniture ----
   D.plate = () => svg(300, 300,
@@ -283,7 +299,7 @@ const Art = (() => {
 
   // ---- UI ----
   D.star = () => svg(120, 120,
-    toon(P('M60 8L75 42L112 45L84 69L93 106L60 86L27 106L36 69L8 45L45 42Z', 'stroke-linejoin="round"'), '#ffd23f', { k: 6, shade: '#f5a623' }) +
+    toon(P('M60 8L75 42L112 45L84 69L93 106L60 86L27 106L36 69L8 45L45 42Z'), '#ffd23f', { k: 6, shade: '#f5a623' }) +
     gloss(46, 40, 10, 5, -30, 0.7));
 
   D.heart = () => svg(100, 90,
@@ -293,10 +309,10 @@ const Art = (() => {
   // ---- the customers ----
   // One face kit; each animal is a set of colours plus its ears and markings.
   const ANIMALS = {
-    bear:  { fur: '#c68a5c', inner: '#f3c9a0', muzzle: '#f6dcbc', shirt: '#5ab4ee', ink: '#4a2c2a' },
-    bunny: { fur: '#fbf5f2', shade: '#e3d2d8', inner: '#ffb3c9', muzzle: '#ffffff', shirt: '#ffcf3f', ink: '#5a3342' },
-    cat:   { fur: '#f8a94a', inner: '#ffd2b0', muzzle: '#ffe8cc', shirt: '#7ad47c', ink: '#5a3322' },
-    panda: { fur: '#ffffff', shade: '#dde2ea', inner: '#46435a', muzzle: '#ffffff', shirt: '#ff86ad', ink: '#35334a' },
+    bear:  { fur: '#c68a5c', inner: '#f3c9a0', muzzle: '#f6dcbc', shirt: '#5ab4ee', ink: '#4a2c2a', iris: '#8a5a2b' },
+    bunny: { fur: '#fbf5f2', shade: '#e3d2d8', inner: '#ffb3c9', muzzle: '#ffffff', shirt: '#ffcf3f', ink: '#5a3342', iris: '#4a90d9' },
+    cat:   { fur: '#9aa0ab', shade: '#7c828e', inner: '#ffb6c4', muzzle: '#e8ebef', shirt: '#46404f', ink: '#3b3844', iris: '#5aa84a' },
+    panda: { fur: '#ffffff', shade: '#dde2ea', inner: '#46435a', muzzle: '#ffffff', shirt: '#ff86ad', ink: '#35334a', iris: '#7a5a44' },
   };
 
   function face(kind, mood) {
@@ -321,7 +337,7 @@ const Art = (() => {
     }
     // head
     s += fur(C(120, 128, 82));
-    if (kind === 'cat') s += line('M108 58L112 76M120 54L120 74M132 58L128 76', '#e4892e', 6);
+    if (kind === 'cat') s += line('M108 58L112 76M120 54L120 74M132 58L128 76', '#727884', 6);
     if (kind === 'panda') {
       s += `<ellipse cx="86" cy="120" rx="22" ry="28" fill="${a.inner}" transform="rotate(25 86 120)"/>`;
       s += `<ellipse cx="154" cy="120" rx="22" ry="28" fill="${a.inner}" transform="rotate(-25 154 120)"/>`;
@@ -331,16 +347,19 @@ const Art = (() => {
     s += E(74, 152, 14, 9)('#ff8fab').replace('/>', ' opacity=".6"/>') + E(166, 152, 14, 9)('#ff8fab').replace('/>', ' opacity=".6"/>');
     const nose = kind === 'bunny' || kind === 'cat' ? '#ff7f9c' : a.ink;
     s += `<path d="M110 142Q120 136 130 142Q128 152 120 154Q112 152 110 142Z" fill="${nose}"/>` + gloss(116, 142, 3, 1.6, 0, 0.7);
-    if (kind === 'cat') s += line('M58 152L30 146M58 160L30 164M182 152L210 146M182 160L210 164', '#e4c4a4', 3);
+    if (kind === 'cat') s += line('M58 152L30 146M58 160L30 164M182 152L210 146M182 160L210 164', '#6c7280', 3);
     // eyes
     const eyeC = kind === 'panda' ? '#1f1d2c' : a.ink;
     if (mood === 'happy') {
       const arc = kind === 'panda' ? '#ffffff' : eyeC;
       s += line('M76 122Q88 106 100 122', arc, 6) + line('M140 122Q152 106 164 122', arc, 6);
     } else {
+      // Bimi eyes: a dark rim, a coloured iris, a pupil and two shines. No whites.
       for (const x of [88, 152]) {
-        s += E(x, 118, 12, 15)(eyeC) + C(x + 4, 111, 5)('#fff') + C(x - 4, 124, 2.4)('#fff');
+        s += E(x, 118, 14, 17)(eyeC) + E(x, 120, 10.5, 13)(a.iris) + E(x, 121, 6, 7.5)('#1f1a2a') +
+          C(x + 4, 111, 5)('#fff') + C(x - 4, 126, 2.4)('#fff');
       }
+      if (kind !== 'panda') s += line('M78 94Q86 90 94 93M146 93Q154 90 162 94', a.ink, 3.5);
     }
     // mouth
     if (mood === 'happy') {

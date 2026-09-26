@@ -3,15 +3,20 @@
    opacity are ever animated, and nothing that moves has a filter. */
 
 :root {
-  --wall: #aee6df;
-  --wall-line: rgba(255, 255, 255, .45);
+  --wall: #f9c8dd;
+  --wall-2: #f5bad4;
   --top: #fad9a9;
   --lip: #eeb071;
   --ink: #5a3342;
-  --btn: #ffb627;
-  --btn-shade: #e98a12;
+  --btn: #ffc93c;
+  --btn-shade: #eda21a;
+  --btn-ring: #fff0b8;
   --go: #5bcb62;
   --go-shade: #3ca046;
+  --go-ring: #c8f2c4;
+  --nav: #9b6fe0;
+  --nav-shade: #7a4fc4;
+  --nav-ring: #dccbfa;
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -42,13 +47,18 @@ button { font: inherit; border: 0; padding: 0; background: none; }
 .kitchen { position: absolute; inset: 0; }
 .wall {
   position: absolute; left: 0; top: 0; width: 100%; height: 340px;
-  background-color: var(--wall);
-  background-image:
-    linear-gradient(90deg, var(--wall-line) 4px, transparent 4px),
-    linear-gradient(var(--wall-line) 4px, transparent 4px);
-  background-size: 72px 72px;
-  background-position: 30px 20px;
+  background: repeating-linear-gradient(90deg, var(--wall) 0 34px, var(--wall-2) 34px 68px);
 }
+/* Gingham: two half-white stripe layers over the recipe's colour make the three-tone check. */
+.cloth {
+  position: absolute; inset: 0; display: none;
+  background-color: var(--cloth, #9fbdf2);
+  background-image:
+    linear-gradient(90deg, rgba(255, 255, 255, .38) 50%, transparent 50%),
+    linear-gradient(rgba(255, 255, 255, .38) 50%, transparent 50%);
+  background-size: 92px 92px;
+}
+.kitchen[data-scene="table"] .cloth { display: block; }
 .counter {
   position: absolute; left: 0; top: 320px; width: 100%; bottom: 0;
   background:
@@ -78,7 +88,7 @@ button { font: inherit; border: 0; padding: 0; background: none; }
 .round-btn {
   position: absolute; width: 96px; height: 96px; border-radius: 50%;
   background: var(--btn);
-  box-shadow: inset 0 -9px 0 var(--btn-shade), 0 6px 0 rgba(106, 44, 74, .15);
+  box-shadow: inset 0 -9px 0 var(--btn-shade), 0 0 0 6px var(--btn-ring), 0 7px 0 6px rgba(106, 44, 74, .15);
   display: grid; place-items: center;
   cursor: pointer;
 }
@@ -88,9 +98,11 @@ button { font: inherit; border: 0; padding: 0; background: none; }
 }
 .round-btn svg { width: 62%; height: 62%; margin-top: -6px; }
 .round-btn:active { transform: scale(.94); }
-.round-btn.back { left: 24px; top: 20px; width: 84px; height: 84px; z-index: 20; }
-.round-btn.big { width: 190px; height: 190px; left: 417px; top: 470px; background: var(--go); box-shadow: inset 0 -14px 0 var(--go-shade), 0 8px 0 rgba(106, 44, 74, .15); }
-.round-btn.tick { width: 120px; height: 120px; background: var(--go); box-shadow: inset 0 -11px 0 var(--go-shade), 0 6px 0 rgba(106, 44, 74, .15); transition: transform .35s cubic-bezier(.3, 1.6, .5, 1), opacity .2s; animation: pulse 1.4s ease-in-out infinite; }
+/* Navigation is a purple squircle; going on is a round green or yellow button. */
+.round-btn.back, .round-btn.home { border-radius: 30%; background: var(--nav); box-shadow: inset 0 -9px 0 var(--nav-shade), 0 0 0 6px var(--nav-ring), 0 7px 0 6px rgba(106, 44, 74, .15); }
+.round-btn.back { left: 26px; top: 22px; width: 84px; height: 84px; z-index: 20; }
+.round-btn.big { width: 190px; height: 190px; left: 417px; top: 470px; background: var(--go); box-shadow: inset 0 -14px 0 var(--go-shade), 0 0 0 8px var(--go-ring), 0 9px 0 8px rgba(106, 44, 74, .15); }
+.round-btn.tick { z-index: 4; width: 120px; height: 120px; background: var(--go); box-shadow: inset 0 -11px 0 var(--go-shade), 0 0 0 6px var(--go-ring), 0 7px 0 6px rgba(106, 44, 74, .15); transition: transform .35s cubic-bezier(.3, 1.6, .5, 1), opacity .2s; animation: pulse 1.4s ease-in-out infinite; }
 .round-btn.hidden { transform: scale(0); opacity: 0; pointer-events: none; animation: none; }
 .pulse { animation: pulse 1.4s ease-in-out infinite; }
 @keyframes pulse { 50% { transform: scale(1.07); } }
@@ -100,9 +112,11 @@ button { font: inherit; border: 0; padding: 0; background: none; }
   position: absolute; left: 0; right: 0; top: 18px; margin: 0;
   text-align: center; font-size: 78px; font-weight: 700; letter-spacing: 1px; line-height: 1;
   color: #fff;
-  text-shadow: 0 5px 0 #ff7aa3, 0 10px 0 rgba(106, 44, 74, .18);
+  /* White letters in a fat blue outline, like Bimi's titles. The stroke is painted under the fill. */
+  -webkit-text-stroke: 14px #2f55c9; paint-order: stroke fill;
+  text-shadow: 0 8px 0 rgba(47, 85, 201, .35);
 }
-.logo span:last-child { text-shadow: 0 5px 0 #ff9a3c, 0 10px 0 rgba(106, 44, 74, .18); }
+.logo span:last-child { -webkit-text-stroke-color: #e8457a; text-shadow: 0 8px 0 rgba(232, 69, 122, .35); }
 
 /* People stand behind the worktop: the box stops at its edge, so it hides their lower half. */
 .folk { position: absolute; left: 0; right: 0; top: 60px; height: 260px; display: flex; justify-content: center; gap: 22px; overflow: hidden; }
@@ -138,7 +152,7 @@ button { font: inherit; border: 0; padding: 0; background: none; }
 @keyframes enter { from { transform: translateX(80px); opacity: 0; } }
 
 .dots { position: absolute; left: 0; right: 0; top: 24px; display: flex; justify-content: center; gap: 14px; pointer-events: none; z-index: 20; }
-.dots i { width: 26px; height: 26px; border-radius: 50%; background: rgba(255, 255, 255, .7); box-shadow: inset 0 -4px 0 rgba(106, 44, 74, .12); }
+.dots i { width: 26px; height: 26px; border-radius: 50%; background: rgba(255, 255, 255, .85); box-shadow: inset 0 -4px 0 rgba(106, 44, 74, .12); }
 .dots i.done { background: var(--go); box-shadow: inset 0 -4px 0 var(--go-shade); }
 .dots i.now { background: var(--btn); box-shadow: inset 0 -4px 0 var(--btn-shade); transform: scale(1.3); }
 
@@ -215,16 +229,14 @@ button { font: inherit; border: 0; padding: 0; background: none; }
 .bubble.gone { transform: scale(0); opacity: 0; }
 @keyframes bubble { from { transform: scale(0); } }
 
-/* The customer peeking in at the window, between the sky and the frame. */
-.peek { position: absolute; left: 101px; top: 79px; width: 188px; height: 154px; overflow: hidden; display: none; }
-.kitchen[data-screen="cook"][data-peek="on"] .peek { display: block; }
-.peek .person { position: absolute; left: 22px; top: 34px; width: 144px; height: 180px; animation: peek 3s ease-in-out infinite; }
+/* The customer popping up from the bottom corner to cheer a finished step. */
+.peek { position: absolute; left: 10px; top: 560px; width: 200px; height: 208px; overflow: hidden; z-index: 30; pointer-events: none; }
+.peek .person { position: absolute; left: 10px; top: 0; width: 180px; height: 225px; transform: translateY(230px); transition: transform .35s cubic-bezier(.3, 1.4, .5, 1); }
+.peek.up .person { transform: translateY(0); }
 .peek .person img { position: absolute; inset: 0; width: 100%; height: 100%; }
 .peek .person .happy { opacity: 0; }
 .peek .person.glad .happy { opacity: 1; }
 .peek .person.glad .idle { opacity: 0; }
-.peek .person.hop { animation: hop .5s ease-out 2; }
-@keyframes hop { 40% { transform: translateY(-18px); } }
 
 /* ---------- cupcakes ---------- */
 .cupcakes .c-batter { transform-box: fill-box; transform-origin: center; }
@@ -264,7 +276,14 @@ button { font: inherit; border: 0; padding: 0; background: none; }
 
 /* Toppings in their dishes, and one in her hand. */
 .dish { z-index: 3; cursor: pointer; }
-.dish .pile { position: absolute; width: 44%; height: 44%; }
+.picker {
+  position: absolute; left: 684px; top: 292px; width: 314px; height: 452px; z-index: 2;
+  background: #fff8ea; border: 7px solid #f5deb4; border-radius: 44px;
+  box-shadow: 0 8px 0 rgba(106, 44, 74, .12);
+}
+.dish.slot { border-radius: 50%; background: #ffffff; box-shadow: inset 0 -7px 0 #efe3cf, 0 0 0 5px #f7ecd8; }
+.dish.slot > img { width: 76%; height: 76%; margin: 12%; }
+.dish.slot.picked { box-shadow: inset 0 -7px 0 #efe3cf, 0 0 0 7px #5fd3c7; }
 .dish.wobble { animation: wobble .4s; }
 @keyframes wobble { 25% { transform: rotate(-6deg); } 75% { transform: rotate(6deg); } }
 .ghost { z-index: 10; pointer-events: none; }
@@ -280,13 +299,13 @@ button { font: inherit; border: 0; padding: 0; background: none; }
 }
 .done-star { position: absolute; left: 432px; top: 420px; width: 160px; height: 160px; animation: pulse 1.4s ease-in-out infinite; }
 .done-star img { width: 100%; height: 100%; }
-.round-btn.again { left: 250px; top: 560px; width: 130px; height: 130px; background: var(--go); box-shadow: inset 0 -12px 0 var(--go-shade), 0 6px 0 rgba(106, 44, 74, .15); }
+.round-btn.again { left: 250px; top: 560px; width: 130px; height: 130px; background: var(--go); box-shadow: inset 0 -12px 0 var(--go-shade), 0 0 0 7px var(--go-ring), 0 8px 0 7px rgba(106, 44, 74, .15); }
 .round-btn.home { left: 644px; top: 560px; width: 130px; height: 130px; }
 
 .deco { z-index: 1; }
 
 /* ---------- the demonstrating hand and the effects canvas ---------- */
-#hint { position: absolute; left: 0; top: 0; width: 110px; height: 149px; opacity: 0; pointer-events: none; z-index: 50; }
+#hint { position: absolute; left: 0; top: 0; width: 120px; height: 150px; opacity: 0; pointer-events: none; z-index: 50; }
 #fx { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
 
 /* Hidden screens keep running CSS animations; pause every always-on one explicitly. */
@@ -298,3 +317,6 @@ button { font: inherit; border: 0; padding: 0; background: none; }
 .screen:not(.active) .order-folk .person,
 #start-folk:not(.x) .person { animation-play-state: paused; }
 #screen-start.active #start-folk .person { animation-play-state: running; }
+
+/* The corner cheer belongs to the tablecloth; in the room the customer is already there. */
+.kitchen[data-scene="room"] ~ #screen-cook .peek { display: none; }

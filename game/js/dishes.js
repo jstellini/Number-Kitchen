@@ -79,7 +79,7 @@ const Dishes = (() => {
     }
 
     function sample() {
-      const kinds = ['pepperoni', 'mushroom', 'olive', 'basil', 'cheese'];
+      const kinds = ['pepperoni', 'tomato', 'cheese', 'basil', 'mushroom'];
       const p = blank();
       p.sauced = p.baked = true;
       for (let i = 0; i < 16; i++) {
