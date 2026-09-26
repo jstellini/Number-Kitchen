@@ -1,9 +1,9 @@
-# Tiny local web server so the game can be opened on this PC or, over Wi-Fi, on the iPad.
+# Tiny local web server for the game in game/, so it can be opened on this PC or, over Wi-Fi, on the iPad.
 # Run as Administrator the first time so Windows lets other devices connect.
 param([int]$Port = 8000)
 
 Add-Type -AssemblyName System.Net.HttpListener -ErrorAction SilentlyContinue
-$root = $PSScriptRoot
+$root = Join-Path $PSScriptRoot 'game'
 $listener = New-Object System.Net.HttpListener
 $listener.Prefixes.Add("http://+:$Port/")
 try { $listener.Start() } catch {

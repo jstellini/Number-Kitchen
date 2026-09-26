@@ -1,12 +1,11 @@
 # Number Kitchen — working notes
 
-A cooking game for one player, age 3-4, on an iPad. **The live code is in `game/`.** The files
-outside it (`js/`, `css/`, `assets/`, `tools/`, root `index.html`) are the first version, kept
-only for reference until they are removed. Do not build on them.
+A cooking game for one player, age 3-4, on an iPad. **The live code is in `game/`.** The first
+version (the numbers game) is archived in `archive/v1/` and tagged `v1-archive`; it is kept for
+reference only. Do not build on it.
 
 The numeracy layer is parked: **the priority is a fun cooking game first**, with learning added
-on top later. The art
-direction follows Bimi Boo's *Kids Cooking* app — read `game/docs/ART.md` before drawing anything.
+on top later. The art direction follows Bimi Boo's *Kids Cooking* app — read `game/docs/ART.md` before drawing anything.
 
 ## Stack
 
