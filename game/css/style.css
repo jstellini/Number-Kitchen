@@ -1,0 +1,235 @@
+/* Number Kitchen — see docs/ART.md for the look and CLAUDE.md for the performance rules.
+   Everything is positioned in stage pixels on the fixed 1024×768 #stage. Only transform and
+   opacity are ever animated, and nothing that moves has a filter. */
+
+:root {
+  --wall: #aee6df;
+  --wall-line: rgba(255, 255, 255, .45);
+  --top: #fad9a9;
+  --lip: #eeb071;
+  --ink: #5a3342;
+  --btn: #ffb627;
+  --btn-shade: #e98a12;
+  --go: #5bcb62;
+  --go-shade: #3ca046;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0; height: 100%; overflow: hidden;
+  background: var(--wall);
+  touch-action: manipulation;
+  -webkit-user-select: none; user-select: none;
+  -webkit-touch-callout: none;
+  font-family: 'Fredoka', 'Arial Rounded MT Bold', system-ui, sans-serif;
+  color: var(--ink);
+}
+
+#stage {
+  position: absolute; left: 0; top: 0;
+  width: 1024px; height: 768px;
+  transform-origin: 0 0;
+  overflow: hidden;
+  touch-action: none;
+}
+
+img { display: block; -webkit-user-drag: none; }
+svg { display: block; }
+button { font: inherit; border: 0; padding: 0; background: none; }
+
+/* ---------- the kitchen ---------- */
+.kitchen { position: absolute; inset: 0; }
+.wall {
+  position: absolute; left: 0; top: 0; width: 100%; height: 340px;
+  background-color: var(--wall);
+  background-image:
+    linear-gradient(90deg, var(--wall-line) 4px, transparent 4px),
+    linear-gradient(var(--wall-line) 4px, transparent 4px);
+  background-size: 72px 72px;
+  background-position: 30px 20px;
+}
+.counter {
+  position: absolute; left: 0; top: 320px; width: 100%; bottom: 0;
+  background:
+    linear-gradient(rgba(106, 44, 74, .10), rgba(106, 44, 74, 0) 40px),
+    repeating-linear-gradient(90deg, transparent 0 170px, rgba(214, 146, 86, .16) 170px 174px),
+    var(--top);
+}
+.counter::before {
+  content: ''; position: absolute; left: 0; right: 0; top: -22px; height: 26px;
+  background: linear-gradient(#ffc98f 0 6px, var(--lip) 6px);
+  border-radius: 6px 6px 0 0;
+}
+.prop { position: absolute; background-repeat: no-repeat; background-size: contain; }
+.prop-window { left: 70px; top: 50px; width: 250px; height: 212px; }
+.prop-shelf { left: 700px; top: 110px; width: 300px; height: 160px; }
+.kitchen[data-screen="start"] .prop,
+.kitchen[data-screen="done"] .prop { display: none; }
+
+/* ---------- screens ---------- */
+.screen { position: absolute; inset: 0; visibility: hidden; }
+.screen.active { visibility: visible; }
+
+.thing { position: absolute; }
+.thing > img, .thing > svg { width: 100%; height: 100%; object-fit: contain; }
+
+/* ---------- round candy buttons ---------- */
+.round-btn {
+  position: absolute; width: 96px; height: 96px; border-radius: 50%;
+  background: var(--btn);
+  box-shadow: inset 0 -9px 0 var(--btn-shade), 0 6px 0 rgba(106, 44, 74, .15);
+  display: grid; place-items: center;
+  cursor: pointer;
+}
+.round-btn::after {
+  content: ''; position: absolute; left: 18%; top: 12%; width: 30%; height: 16%;
+  border-radius: 50%; background: rgba(255, 255, 255, .55); transform: rotate(-30deg);
+}
+.round-btn svg { width: 62%; height: 62%; margin-top: -6px; }
+.round-btn:active { transform: scale(.94); }
+.round-btn.back { left: 24px; top: 20px; width: 84px; height: 84px; z-index: 20; }
+.round-btn.big { width: 190px; height: 190px; left: 417px; top: 470px; background: var(--go); box-shadow: inset 0 -14px 0 var(--go-shade), 0 8px 0 rgba(106, 44, 74, .15); }
+.round-btn.tick { width: 120px; height: 120px; background: var(--go); box-shadow: inset 0 -11px 0 var(--go-shade), 0 6px 0 rgba(106, 44, 74, .15); transition: transform .35s cubic-bezier(.3, 1.6, .5, 1), opacity .2s; animation: pulse 1.4s ease-in-out infinite; }
+.round-btn.hidden { transform: scale(0); opacity: 0; pointer-events: none; animation: none; }
+.pulse { animation: pulse 1.4s ease-in-out infinite; }
+@keyframes pulse { 50% { transform: scale(1.07); } }
+
+/* ---------- start ---------- */
+.logo {
+  position: absolute; left: 0; right: 0; top: 18px; margin: 0;
+  text-align: center; font-size: 78px; font-weight: 700; letter-spacing: 1px; line-height: 1;
+  color: #fff;
+  text-shadow: 0 5px 0 #ff7aa3, 0 10px 0 rgba(106, 44, 74, .18);
+}
+.logo span:last-child { text-shadow: 0 5px 0 #ff9a3c, 0 10px 0 rgba(106, 44, 74, .18); }
+
+/* People stand behind the worktop: the box stops at its edge, so it hides their lower half. */
+.folk { position: absolute; left: 0; right: 0; top: 60px; height: 260px; display: flex; justify-content: center; gap: 22px; overflow: hidden; }
+.folk .person { position: relative; width: 210px; height: 263px; margin-top: 26px; }
+.folk .person img { position: absolute; inset: 0; width: 100%; height: 100%; }
+.folk .person .happy { opacity: 0; }
+.folk .person.glad .happy { opacity: 1; }
+.folk .person.glad .idle { opacity: 0; }
+#start-folk .person { animation: peek 2.6s ease-in-out infinite; }
+#start-folk .person:nth-child(2) { animation-delay: -.6s; }
+#start-folk .person:nth-child(3) { animation-delay: -1.3s; }
+#start-folk .person:nth-child(4) { animation-delay: -1.9s; }
+@keyframes peek { 50% { transform: translateY(12px); } }
+
+.folk.solo { top: 20px; height: 300px; }
+.folk.solo .person { width: 260px; height: 325px; margin-top: 20px; }
+.serve-folk .person.chomp { animation: chomp .4s ease-out; }
+@keyframes chomp { 30% { transform: scale(1.06, .94) translateY(6px); } 60% { transform: scale(.97, 1.03); } }
+
+/* ---------- menu ---------- */
+.menu-cards { position: absolute; left: 0; right: 0; top: 330px; display: flex; justify-content: center; gap: 60px; }
+.card { position: relative; width: 380px; height: 380px; animation: bob 2.4s ease-in-out infinite; cursor: pointer; }
+.card-plate { position: absolute; inset: 0; width: 100%; height: 100%; }
+.card .pizza.card-food { position: absolute; left: 65px; top: 65px; }
+@keyframes bob { 50% { transform: translateY(-10px) rotate(2deg); } }
+
+/* ---------- cook ---------- */
+.stage-area { position: absolute; inset: 0; }
+.stage-area.enter { animation: enter .45s cubic-bezier(.3, 1.3, .5, 1); }
+@keyframes enter { from { transform: translateX(80px); opacity: 0; } }
+
+.dots { position: absolute; left: 0; right: 0; top: 24px; display: flex; justify-content: center; gap: 14px; pointer-events: none; z-index: 20; }
+.dots i { width: 26px; height: 26px; border-radius: 50%; background: rgba(255, 255, 255, .7); box-shadow: inset 0 -4px 0 rgba(106, 44, 74, .12); }
+.dots i.done { background: var(--go); box-shadow: inset 0 -4px 0 var(--go-shade); }
+.dots i.now { background: var(--btn); box-shadow: inset 0 -4px 0 var(--btn-shade); transform: scale(1.3); }
+
+/* Sources on the counter: a little bounce so they read as "pick me up". */
+.source { cursor: pointer; z-index: 3; }
+.source.used { opacity: 0; transition: opacity .35s; pointer-events: none; }
+.source.crack > img { animation: crack .35s ease-in-out; }
+@keyframes crack { 25% { transform: rotate(-8deg); } 75% { transform: rotate(8deg); } }
+
+.stream { position: absolute; width: 48px; border-radius: 24px; z-index: 2; transform-origin: top; animation: stream .9s ease-out forwards; }
+@keyframes stream { 0% { transform: scaleY(0); } 30%, 70% { transform: scaleY(1); opacity: 1; } 100% { transform: scaleY(1) translateY(30px); opacity: 0; } }
+
+.bowl { z-index: 1; }
+.bowl .v-flour, .bowl .v-milk, .bowl .v-egg, .bowl .v-sugar, .bowl .v-batter, .bowl .v-dough { opacity: 0; transition: opacity .5s; }
+.bowl.flour .v-flour, .bowl.milk .v-milk, .bowl.egg .v-egg { opacity: 1; }
+.bowl.instant * { transition: none; }
+.bowl.boing > svg { animation: boing .6s cubic-bezier(.3, 1.6, .5, 1); }
+@keyframes boing { 40% { transform: scale(1.06, .94); } }
+
+.spoon, .ladle, .cutter, .pin { z-index: 5; pointer-events: auto; }
+.spoon > img.flip { transform: rotate(180deg); }
+.ball { z-index: 3; }
+.board { z-index: 0; }
+.pizza-box { z-index: 2; }
+.pizza-box.lift { z-index: 6; }
+.pizza-box.inside { z-index: 1; }
+.oven { z-index: 0; }
+.oven-door { z-index: 4; pointer-events: none; }
+
+/* The oven's moving parts. The door folds down about its bottom edge. */
+.oven-door .v-door { transform-box: fill-box; transform-origin: 50% 100%; transition: transform .45s cubic-bezier(.4, 1.4, .6, 1); }
+.oven-door.open .v-door { transform: scaleY(.08); }
+.oven .v-glow { opacity: 0; transition: opacity .6s; }
+.oven.baking .v-glow { opacity: .9; animation: glow 1s ease-in-out infinite; }
+.oven .v-light { opacity: .25; }
+.oven.baking .v-light { opacity: 1; }
+.oven .v-timer { transform-box: fill-box; transform-origin: center; }
+.oven.baking .v-timer { animation: spin 3s linear; }
+@keyframes glow { 50% { opacity: .6; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---------- the pizza ---------- */
+.pizza { position: relative; }
+.pizza > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.pizza .p-tops { position: absolute; inset: 0; }
+.pizza .p-top { position: absolute; width: 16%; height: 16%; }
+.pizza .p-top.land { animation: land .35s cubic-bezier(.3, 1.6, .5, 1); }
+@keyframes land { from { transform: scale(1.5); } }
+.pizza .p-sauce-full, .pizza .p-melt, .pizza .p-crust-baked, .pizza .p-bake { opacity: 0; transition: opacity 1s; }
+.pizza.sauced .p-sauce-full { opacity: 1; }
+.pizza.baked .p-melt { opacity: .35; }
+.pizza.baked .p-crust-baked, .pizza.baked .p-bake { opacity: 1; }
+.pizza .p-guide { stroke: #fff; stroke-width: 6; stroke-dasharray: 14 14; stroke-linecap: round; opacity: 0; }
+.pizza-box.cutting .p-guide { opacity: .9; }
+.pizza-box.cutting .p-guide.gone { opacity: 0; }
+.pizza .p-cut { fill: #a95d2a; transform-box: fill-box; transform-origin: 0 50%; transform: scaleX(0); transition: transform .35s ease-out; }
+.pizza .p-cut.on { transform: scaleX(1); }
+.pizza .p-bite { opacity: 0; transition: opacity .15s; }
+.pizza .p-bite.on { opacity: 1; }
+.plate-box { z-index: 3; }
+.plate-box .pizza.on-plate { position: absolute; left: 50px; top: 50px; }
+
+/* Toppings in their dishes, and one in her hand. */
+.dish { z-index: 3; cursor: pointer; }
+.dish .pile { position: absolute; width: 44%; height: 44%; }
+.dish.wobble { animation: wobble .4s; }
+@keyframes wobble { 25% { transform: rotate(-6deg); } 75% { transform: rotate(6deg); } }
+.ghost { z-index: 10; pointer-events: none; }
+
+.float-heart { z-index: 10; pointer-events: none; opacity: 0; animation: heart 1.4s ease-out forwards; }
+@keyframes heart { 0% { opacity: 0; transform: scale(.3); } 20% { opacity: 1; transform: scale(1.1); } 100% { opacity: 0; transform: translateY(-120px) scale(1); } }
+
+/* ---------- done ---------- */
+.rays {
+  position: absolute; left: 212px; top: -130px; width: 600px; height: 600px; border-radius: 50%;
+  background: repeating-conic-gradient(rgba(255, 255, 255, .5) 0 12deg, transparent 12deg 24deg);
+  animation: spin 24s linear infinite;
+}
+.done-star { position: absolute; left: 432px; top: 420px; width: 160px; height: 160px; animation: pulse 1.4s ease-in-out infinite; }
+.done-star img { width: 100%; height: 100%; }
+.round-btn.again { left: 250px; top: 560px; width: 130px; height: 130px; background: var(--go); box-shadow: inset 0 -12px 0 var(--go-shade), 0 6px 0 rgba(106, 44, 74, .15); }
+.round-btn.home { left: 644px; top: 560px; width: 130px; height: 130px; }
+
+.deco { z-index: 1; }
+
+/* ---------- the demonstrating hand and the effects canvas ---------- */
+#hint { position: absolute; left: 0; top: 0; width: 110px; height: 149px; opacity: 0; pointer-events: none; z-index: 50; }
+#fx { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
+
+/* Hidden screens keep running CSS animations; pause every always-on one explicitly. */
+.screen:not(.active) .pulse,
+.screen:not(.active) .card,
+.screen:not(.active) .rays,
+.screen:not(.active) .done-star,
+.screen:not(.active) .round-btn.tick,
+#start-folk:not(.x) .person { animation-play-state: paused; }
+#screen-start.active #start-folk .person { animation-play-state: running; }

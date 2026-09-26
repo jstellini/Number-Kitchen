@@ -1,3 +1,7 @@
+> **New codebase:** the game is being rebuilt from scratch in [`game/`](game/) with a new art
+> direction (flat, outline-free candy style after Bimi Boo's *Kids Cooking*). Open
+> `game/index.html`. Everything below describes the first version, kept for reference.
+
 # Number Kitchen
 
 A numbers game for 3–4 year olds. Work through a recipe book — pizza, cupcakes, sandwich,

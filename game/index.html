@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Number Kitchen">
+<meta name="theme-color" content="#aee6df">
+<title>Number Kitchen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='26' fill='%23aee6df'/%3E%3Ccircle cx='50' cy='52' r='36' fill='%23f3c27c'/%3E%3Ccircle cx='50' cy='52' r='28' fill='%23dc3f2e'/%3E%3Ccircle cx='40' cy='44' r='7' fill='%23ffd23f'/%3E%3Ccircle cx='60' cy='58' r='7' fill='%23ffd23f'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/style.css">
+<script>
+// Cancel a second touchend inside the double-tap window, so a quick double tap can never zoom
+// the page. touch-action and the pointerdown handlers are not enough on their own in WebKit.
+(function () {
+  var last = 0;
+  document.addEventListener('touchend', function (e) {
+    var now = Date.now();
+    if (now - last < 350) e.preventDefault();
+    last = now;
+  }, { passive: false });
+})();
+</script>
+</head>
+<body>
+
+<!-- Everything lives on one 1024×768 stage, scaled to fit (see Kit.fit). -->
+<div id="stage">
+
+  <!-- The kitchen is shared by every screen: a tiled wall, a window, a shelf and the worktop. -->
+  <div class="kitchen">
+    <div class="wall"></div>
+    <div class="prop prop-window"></div>
+    <div class="prop prop-shelf"></div>
+    <div class="counter"></div>
+  </div>
+
+  <section id="screen-start" class="screen active">
+    <h1 class="logo"><span>Number</span> <span>Kitchen</span></h1>
+    <div id="start-folk" class="folk"></div>
+    <div id="start-props"></div>
+    <button id="btn-play" class="round-btn big pulse" aria-label="Play"></button>
+  </section>
+
+  <section id="screen-menu" class="screen">
+    <button class="round-btn back" data-go="start" aria-label="Back"></button>
+    <div id="menu-cards" class="menu-cards"></div>
+  </section>
+
+  <section id="screen-cook" class="screen">
+    <div id="stage-area" class="stage-area"></div>
+    <button class="round-btn back" data-go="menu" aria-label="Home"></button>
+    <div id="dots" class="dots"></div>
+  </section>
+
+  <section id="screen-done" class="screen">
+    <div class="rays"></div>
+    <div id="done-folk" class="folk solo"></div>
+    <div id="done-star" class="done-star"></div>
+    <button id="btn-again" class="round-btn again" aria-label="Cook again"></button>
+    <button id="btn-home" class="round-btn home" aria-label="Menu"></button>
+  </section>
+
+</div>
+
+<canvas id="fx"></canvas>
+
+<script src="js/art.js"></script>
+<script src="js/sfx.js"></script>
+<script src="js/kit.js"></script>
+<script src="js/pizza.js"></script>
+<script src="js/steps.js"></script>
+<script src="js/recipes.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
