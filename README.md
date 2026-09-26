@@ -26,5 +26,5 @@ open it on the iPad over Wi-Fi.
 ## Layout
 
 - `game/` — the game. See [`CLAUDE.md`](CLAUDE.md) for how it is put together.
-- `archive/v1/` — the first version (the numbers game), kept for reference. Also tagged `v1-archive`.
+- `archive/v1/` — the first version (the numbers game), kept for reference (its last commit on main was `c53792d`).
 - `build.sh`, `netlify.toml` — Netlify publishes `game/` from `main`, and a preview for every pull request.

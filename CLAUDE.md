@@ -1,7 +1,7 @@
 # Number Kitchen — working notes
 
 A cooking game for one player, age 3-4, on an iPad. **The live code is in `game/`.** The first
-version (the numbers game) is archived in `archive/v1/` and tagged `v1-archive`; it is kept for
+version (the numbers game) is archived in `archive/v1/` (last commit `c53792d`); it is kept for
 reference only. Do not build on it.
 
 The numeracy layer is parked: **the priority is a fun cooking game first**, with learning added
