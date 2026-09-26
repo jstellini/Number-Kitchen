@@ -70,6 +70,11 @@ const Sfx = (() => {
     ding:    () => { tone('triangle', 1318, 1318, 0.9, 0.3); tone('sine', 2637, 2637, 0.6, 0.1); },
     door:    () => { tone('sine', 180, 120, 0.2, 0.25); noise(0.15, 500, 2, 0.12); },
     nom:     () => { tone('square', 220, 160, 0.07, 0.12); tone('square', 200, 150, 0.07, 0.12, 0.1); },
+    whirr:   () => every('whirr', 110) && (tone('sawtooth', 90 + Math.random() * 20, 110, 0.12, 0.05), noise(0.12, 1200, 1, 0.06)),
+    pour:    () => every('pour', 140) && noise(0.16, 600 + Math.random() * 300, 6, 0.12),
+    squeeze: () => { noise(0.25, 300, 2, 0.2, 0, 150); tone('sine', 300, 500, 0.2, 0.08); },
+    slurp:   () => { noise(0.3, 900, 4, 0.2, 0, 2500); tone('sine', 300, 700, 0.25, 0.06); },
+    yay:     () => [784, 988, 1175].forEach((f, i) => tone('triangle', f, f * 1.02, 0.18, 0.18, i * 0.08)),
     sparkle: () => [1568, 1976, 2349, 3136].forEach((f, i) => tone('sine', f, f, 0.25, 0.12, i * 0.06)),
     tada:    () => [523, 659, 784, 1046].forEach((f, i) => tone('triangle', f, f, i === 3 ? 0.8 : 0.25, 0.25, i * 0.12)),
   };

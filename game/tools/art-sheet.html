@@ -9,5 +9,5 @@ figure.big{width:300px}figure.big svg{width:284px;height:250px}
 <script src="../js/art.js"></script>
 <script>
 for (const n of Art.names()) document.body.insertAdjacentHTML('beforeend', `<figure>${Art.img(n)}<figcaption>${n}</figcaption></figure>`);
-for (const n of ['bowl','ovenBack','doughBall','pizzaBase']) document.body.insertAdjacentHTML('beforeend', `<figure class="big">${Art[n]()}${n==='ovenBack'?'':''}<figcaption>${n}</figcaption></figure>`);
+for (const n of ['bowl','blender','ovenBack','doughBall','pizzaBase']) document.body.insertAdjacentHTML('beforeend', `<figure class="big">${Art[n]()}${n==='ovenBack'?'':''}<figcaption>${n}</figcaption></figure>`);
 </script></body></html>

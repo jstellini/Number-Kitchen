@@ -3,15 +3,7 @@ const App = (() => {
   const $ = s => document.querySelector(s);
   const { tap, put } = Kit;
 
-  // White icons for the round buttons. The child never has to read a label.
-  const ICON = {
-    play: '<path d="M38 26L78 50L38 74Z" stroke-linejoin="round" stroke-width="10" stroke="#fff"/>',
-    back: '<path d="M60 26L34 50L60 74" fill="none" stroke="#fff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>',
-    home: '<path d="M22 50L50 26L78 50M32 44V76H68V44" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>',
-    tick: '<path d="M26 52L44 70L76 34" fill="none" stroke="#fff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>',
-    again: '<path d="M70 38A24 24 0 1 0 74 58" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round"/><path d="M60 24L76 36L62 48Z" stroke="#fff" stroke-width="6" stroke-linejoin="round"/>',
-  };
-  const icon = n => `<svg viewBox="0 0 100 100" fill="#fff">${ICON[n]}</svg>`;
+  const { icon } = Kit;
 
   let current = null, step = null, meal = null, recipe = null, index = 0;
 
@@ -50,12 +42,13 @@ const App = (() => {
     const cards = $('#menu-cards');
     cards.innerHTML = '';
     for (const r of RECIPES) {
+      const dish = Dishes[r.dish];
       const card = document.createElement('div');
-      card.className = 'card';
-      card.innerHTML = Art.img('plate', 'card-plate');
-      const pz = Pizza.make(Pizza.sample(), 250);
-      pz.classList.add('card-food');
-      card.appendChild(pz);
+      card.className = `card card-${r.id}`;
+      if (dish.plate) card.innerHTML = Art.img('plate', 'card-plate');
+      const food = dish.make(dish.sample(), dish.plate ? 200 : 250);
+      food.classList.add('card-food');
+      card.appendChild(food);
       tap(card, () => { Sfx.pop(); startRecipe(r); });
       cards.appendChild(card);
     }
@@ -63,33 +56,63 @@ const App = (() => {
   }
 
   // ---------- cooking ----------
+  // Every recipe opens with the customer ordering; the dots only count the cooking.
+  const ORDER = { do: 'order' };
+
+  function newMeal(r) {
+    const dish = Dishes[r.dish];
+    return { dish, state: dish.blank(), added: [], customer: Kit.pick(CUSTOMERS) };
+  }
+
   function startRecipe(r) {
     recipe = r;
-    index = 0;
-    meal = { pizza: Pizza.blank(), customer: Kit.pick(CUSTOMERS) };
+    index = -1;
+    meal = newMeal(r);
+    peek(meal.customer);
     show('cook');
     runStep();
   }
+
+  const specAt = i => (i < 0 ? ORDER : recipe.steps[i]);
 
   function runStep() {
     stopStep();
     const area = $('#stage-area');
     area.innerHTML = '';
     area.classList.remove('enter'); void area.offsetWidth; area.classList.add('enter');
-    $('#dots').innerHTML = recipe.steps.map((_, i) =>
+    // A fresh root per step, so its listeners go when it does.
+    const root = document.createElement('div');
+    root.className = 'step-root';
+    area.appendChild(root);
+    $('#dots').innerHTML = index < 0 ? '' : recipe.steps.map((_, i) =>
       `<i class="${i < index ? 'done' : i === index ? 'now' : ''}"></i>`).join('');
-    const name = recipe.steps[index];
-    step = Steps[name](area, meal, () => {
+    const spec = specAt(index);
+    // The customer watches through the window while she cooks, and cheers each step.
+    document.querySelector('.kitchen').dataset.peek = spec.do === 'order' || spec.do === 'serve' ? 'off' : 'on';
+    step = Steps[spec.do](root, meal, () => {
       step = null;
+      if (spec.do !== 'order' && spec.do !== 'serve') cheer();
       index++;
       if (index < recipe.steps.length) runStep(); else finishRecipe();
-    });
+    }, spec);
   }
 
   function stopStep() {
     if (step) step.stop();
     step = null;
     Hint.set(null);
+  }
+
+  // ---------- the customer at the window ----------
+  function peek(who) {
+    $('#peek').innerHTML = `<div class="person">${Art.img(who, 'idle')}${Art.img(who + '-happy', 'happy')}</div>`;
+  }
+  function cheer() {
+    const p = $('#peek .person');
+    if (!p) return;
+    p.classList.add('glad', 'hop');
+    Sfx.yay();
+    setTimeout(() => p.classList.remove('glad', 'hop'), 1300);
   }
 
   // ---------- done ----------
@@ -101,24 +124,24 @@ const App = (() => {
     Fx.confetti();
   }
 
-  // ?step=bake opens a step directly, with the meal as it would be by then. For development.
-  function devJump(name) {
-    const r = RECIPES[0], i = r.steps.indexOf(name);
-    if (i < 0) return false;
+  // ?recipe=cupcakes&step=frost opens a step directly, with the meal as it would be by then.
+  // For development.
+  function devJump(id, name) {
+    const r = RECIPES.find(x => x.id === id) || RECIPES[0];
+    const i = r.steps.findIndex(x => x.do === name);
+    if (i < 0 && name !== 'order') return false;
     recipe = r; index = i;
-    meal = { pizza: Pizza.blank(), customer: Kit.pick(CUSTOMERS) };
-    const p = meal.pizza;
-    if (i > r.steps.indexOf('sauce')) p.sauced = true;
-    if (i > r.steps.indexOf('toppings')) p.toppings = Pizza.sample().toppings;
-    if (i > r.steps.indexOf('bake')) p.baked = true;
-    if (i > r.steps.indexOf('cut')) p.cuts = Pizza.ANGLES.slice();
+    meal = newMeal(r);
+    for (const sp of r.steps.slice(0, Math.max(0, i))) if (Steps.skip[sp.do]) Steps.skip[sp.do](meal, sp);
+    peek(meal.customer);
     show('cook');
     runStep();
     return true;
   }
 
   function init() {
-    document.querySelector('.prop-window').style.backgroundImage = `url(${Art.url('window')})`;
+    document.querySelector('.prop-window-sky').style.backgroundImage = `url(${Art.url('window-sky')})`;
+    document.querySelector('.prop-window').style.backgroundImage = `url(${Art.url('window-frame')})`;
     document.querySelector('.prop-shelf').style.backgroundImage = `url(${Art.url('shelf')})`;
     buildStart();
     document.querySelectorAll('.round-btn.back').forEach(b => {
@@ -130,12 +153,12 @@ const App = (() => {
     tap($('#btn-again'), () => { Sfx.pop(); startRecipe(recipe); });
     tap($('#btn-home'), () => { Sfx.pop(); openMenu(); });
     document.addEventListener('pointerdown', () => Sfx.unlock(), { once: true });
-    const jump = new URLSearchParams(location.search).get('step');
-    if (jump === 'done') { recipe = RECIPES[0]; meal = { pizza: Pizza.sample(), customer: 'bunny' }; finishRecipe(); }
+    const q = new URLSearchParams(location.search), jump = q.get('step');
+    if (jump === 'done') { recipe = RECIPES[0]; meal = newMeal(recipe); finishRecipe(); }
     else if (jump === 'menu') openMenu();
-    else if (!jump || !devJump(jump)) show('start');
+    else if (!jump || !devJump(q.get('recipe'), jump)) show('start');
   }
 
   init();
-  return { icon, show };
+  return { show };
 })();

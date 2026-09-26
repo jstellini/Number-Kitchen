@@ -99,7 +99,17 @@ const Kit = (() => {
   const rand = (a, b) => a + Math.random() * (b - a);
   const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 
-  return { stage, pt, dist, tap, drag, put, centre, moveTo, fly, home, wait, lerp, clamp, rand, pick };
+  // White icons for the round buttons. The child never has to read a label.
+  const ICON = {
+    play: '<path d="M38 26L78 50L38 74Z" stroke-linejoin="round" stroke-width="10" stroke="#fff"/>',
+    back: '<path d="M60 26L34 50L60 74" fill="none" stroke="#fff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>',
+    home: '<path d="M22 50L50 26L78 50M32 44V76H68V44" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>',
+    tick: '<path d="M26 52L44 70L76 34" fill="none" stroke="#fff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>',
+    again: '<path d="M70 38A24 24 0 1 0 74 58" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round"/><path d="M60 24L76 36L62 48Z" stroke="#fff" stroke-width="6" stroke-linejoin="round"/>',
+  };
+  const icon = n => `<svg viewBox="0 0 100 100" fill="#fff">${ICON[n]}</svg>`;
+
+  return { icon, stage, pt, dist, tap, drag, put, centre, moveTo, fly, home, wait, lerp, clamp, rand, pick };
 })();
 
 // The demonstrating hand. After a few seconds of stillness it shows the gesture once and fades.

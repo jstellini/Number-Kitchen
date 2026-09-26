@@ -62,7 +62,7 @@ button { font: inherit; border: 0; padding: 0; background: none; }
   border-radius: 6px 6px 0 0;
 }
 .prop { position: absolute; background-repeat: no-repeat; background-size: contain; }
-.prop-window { left: 70px; top: 50px; width: 250px; height: 212px; }
+.prop-window, .prop-window-sky { left: 70px; top: 50px; width: 250px; height: 212px; }
 .prop-shelf { left: 700px; top: 110px; width: 300px; height: 160px; }
 .kitchen[data-screen="start"] .prop,
 .kitchen[data-screen="done"] .prop { display: none; }
@@ -123,10 +123,13 @@ button { font: inherit; border: 0; padding: 0; background: none; }
 @keyframes chomp { 30% { transform: scale(1.06, .94) translateY(6px); } 60% { transform: scale(.97, 1.03); } }
 
 /* ---------- menu ---------- */
-.menu-cards { position: absolute; left: 0; right: 0; top: 330px; display: flex; justify-content: center; gap: 60px; }
-.card { position: relative; width: 380px; height: 380px; animation: bob 2.4s ease-in-out infinite; cursor: pointer; }
+.menu-cards { position: absolute; left: 0; right: 0; top: 360px; display: flex; justify-content: center; gap: 36px; }
+.card { position: relative; width: 300px; height: 300px; animation: bob 2.4s ease-in-out infinite; cursor: pointer; }
 .card-plate { position: absolute; inset: 0; width: 100%; height: 100%; }
-.card .pizza.card-food { position: absolute; left: 65px; top: 65px; }
+.card .card-food { position: absolute; left: 55px; top: 55px; }
+.card-cupcakes .card-food, .card-smoothie .card-food { left: 20px; top: 0; }
+.card:nth-child(2) { animation-delay: -.8s; }
+.card:nth-child(3) { animation-delay: -1.6s; }
 @keyframes bob { 50% { transform: translateY(-10px) rotate(2deg); } }
 
 /* ---------- cook ---------- */
@@ -148,20 +151,21 @@ button { font: inherit; border: 0; padding: 0; background: none; }
 .stream { position: absolute; width: 48px; border-radius: 24px; z-index: 2; transform-origin: top; animation: stream .9s ease-out forwards; }
 @keyframes stream { 0% { transform: scaleY(0); } 30%, 70% { transform: scaleY(1); opacity: 1; } 100% { transform: scaleY(1) translateY(30px); opacity: 0; } }
 
-.bowl { z-index: 1; }
+.step-root { position: absolute; inset: 0; }
+.vessel { z-index: 1; }
 .bowl .v-flour, .bowl .v-milk, .bowl .v-egg, .bowl .v-sugar, .bowl .v-batter, .bowl .v-dough { opacity: 0; transition: opacity .5s; }
 .bowl.flour .v-flour, .bowl.milk .v-milk, .bowl.egg .v-egg { opacity: 1; }
 .bowl.instant * { transition: none; }
-.bowl.boing > svg { animation: boing .6s cubic-bezier(.3, 1.6, .5, 1); }
+.vessel.boing > svg { animation: boing .6s cubic-bezier(.3, 1.6, .5, 1); }
 @keyframes boing { 40% { transform: scale(1.06, .94); } }
 
 .spoon, .ladle, .cutter, .pin { z-index: 5; pointer-events: auto; }
 .spoon > img.flip { transform: rotate(180deg); }
 .ball { z-index: 3; }
 .board { z-index: 0; }
-.pizza-box { z-index: 2; }
-.pizza-box.lift { z-index: 6; }
-.pizza-box.inside { z-index: 1; }
+.food-box { z-index: 2; }
+.food-box.lift { z-index: 6; }
+.food-box.inside { z-index: 1; }
 .oven { z-index: 0; }
 .oven-door { z-index: 4; pointer-events: none; }
 
@@ -177,26 +181,86 @@ button { font: inherit; border: 0; padding: 0; background: none; }
 @keyframes glow { 50% { opacity: .6; } }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* The blender: the lid is off while things go in, and it shakes while it whizzes. */
+.blender .v-milk, .blender .v-banana, .blender .v-strawberry, .blender .v-blueberry, .blender .v-smoothie { opacity: 0; transition: opacity .4s; }
+.blender.milk .v-milk, .blender.banana .v-banana, .blender.strawberry .v-strawberry, .blender.blueberry .v-blueberry { opacity: 1; }
+.blender.open .v-lid { opacity: 0; }
+.blender .v-spin { transform-box: fill-box; transform-origin: center; }
+.blender.blending .v-spin { animation: spin .45s linear infinite; }
+.blender.blending > svg { animation: shake .1s linear infinite; }
+.blender .v-button { transform-box: fill-box; transform-origin: center; transition: transform .1s; }
+.blender.blending .v-button { transform: scale(.88); }
+@keyframes shake { 25% { transform: translate(-3px, 1px) rotate(-.6deg); } 75% { transform: translate(3px, -1px) rotate(.6deg); } }
+
+/* Pouring. The stream is a fixed-height strip moved and stretched with transform. */
+.jug { z-index: 6; cursor: pointer; }
+.pour-stream { position: absolute; left: 0; top: 0; width: 26px; height: 100px; border-radius: 13px; transform-origin: 0 0; opacity: 0; z-index: 5; pointer-events: none; }
+
+/* Piping bags. */
+.bag { z-index: 6; cursor: pointer; }
+.bag.squeeze > img { transform: scale(1.08, .9); transition: transform .15s; }
+
+/* The customer's order: a speech bubble with the dish in it. */
+.order-folk .person { animation: peek 2.6s ease-in-out infinite; }
+.bubble {
+  position: absolute; left: 650px; top: 90px; width: 250px; height: 250px; border-radius: 50%;
+  background: #fff; box-shadow: inset 0 -10px 0 #dde8f2;
+  display: grid; place-items: center;
+  animation: bubble .5s .3s cubic-bezier(.3, 1.6, .5, 1) both;
+  transition: transform .3s, opacity .3s;
+}
+.bubble::before { content: ''; position: absolute; left: -26px; top: 150px; width: 60px; height: 60px; border-radius: 50%; background: #fff; }
+.bubble::after { content: ''; position: absolute; left: -54px; top: 206px; width: 28px; height: 28px; border-radius: 50%; background: #fff; }
+.bubble .food { z-index: 1; }
+.bubble.gone { transform: scale(0); opacity: 0; }
+@keyframes bubble { from { transform: scale(0); } }
+
+/* The customer peeking in at the window, between the sky and the frame. */
+.peek { position: absolute; left: 101px; top: 79px; width: 188px; height: 154px; overflow: hidden; display: none; }
+.kitchen[data-screen="cook"][data-peek="on"] .peek { display: block; }
+.peek .person { position: absolute; left: 22px; top: 34px; width: 144px; height: 180px; animation: peek 3s ease-in-out infinite; }
+.peek .person img { position: absolute; inset: 0; width: 100%; height: 100%; }
+.peek .person .happy { opacity: 0; }
+.peek .person.glad .happy { opacity: 1; }
+.peek .person.glad .idle { opacity: 0; }
+.peek .person.hop { animation: hop .5s ease-out 2; }
+@keyframes hop { 40% { transform: translateY(-18px); } }
+
+/* ---------- cupcakes ---------- */
+.cupcakes .c-batter { transform-box: fill-box; transform-origin: center; }
+.cupcakes .c-dome { transform-box: fill-box; transform-origin: 50% 100%; transform: scaleY(0); transition: transform .8s cubic-bezier(.3, 1.4, .5, 1); }
+.cupcakes.baked .c-dome { transform: none; }
+.cupcakes.baked .c-batter { opacity: 0; }
+.cupcakes .c-frost { transform-box: fill-box; transform-origin: 50% 100%; transform: scale(0); opacity: 0; transition: transform .4s cubic-bezier(.3, 1.6, .5, 1), opacity .1s; }
+.cupcakes .c-frost.on { transform: none; opacity: 1; }
+.cupcakes .cup { transition: opacity .2s; }
+.cupcakes .cup.eaten { opacity: 0; }
+
+/* ---------- smoothie ---------- */
+.smoothie .s-fill { transform-box: fill-box; transform-origin: 50% 100%; transition: transform .3s; }
+
 /* ---------- the pizza ---------- */
-.pizza { position: relative; }
-.pizza > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-.pizza .p-tops { position: absolute; inset: 0; }
-.pizza .p-top { position: absolute; width: 16%; height: 16%; }
-.pizza .p-top.land { animation: land .35s cubic-bezier(.3, 1.6, .5, 1); }
+.food { position: relative; }
+.food > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.food .p-tops { position: absolute; inset: 0; }
+.food .p-top { position: absolute; transition: opacity .2s; }
+.food .p-top.eaten { opacity: 0; }
+.food .p-top.land { animation: land .35s cubic-bezier(.3, 1.6, .5, 1); }
 @keyframes land { from { transform: scale(1.5); } }
 .pizza .p-sauce-full, .pizza .p-melt, .pizza .p-crust-baked, .pizza .p-bake { opacity: 0; transition: opacity 1s; }
 .pizza.sauced .p-sauce-full { opacity: 1; }
 .pizza.baked .p-melt { opacity: .35; }
 .pizza.baked .p-crust-baked, .pizza.baked .p-bake { opacity: 1; }
 .pizza .p-guide { stroke: #fff; stroke-width: 6; stroke-dasharray: 14 14; stroke-linecap: round; opacity: 0; }
-.pizza-box.cutting .p-guide { opacity: .9; }
-.pizza-box.cutting .p-guide.gone { opacity: 0; }
+.food-box.cutting .p-guide { opacity: .9; }
+.food-box.cutting .p-guide.gone { opacity: 0; }
 .pizza .p-cut { fill: #a95d2a; transform-box: fill-box; transform-origin: 0 50%; transform: scaleX(0); transition: transform .35s ease-out; }
 .pizza .p-cut.on { transform: scaleX(1); }
 .pizza .p-bite { opacity: 0; transition: opacity .15s; }
 .pizza .p-bite.on { opacity: 1; }
 .plate-box { z-index: 3; }
-.plate-box .pizza.on-plate { position: absolute; left: 50px; top: 50px; }
+.plate-box .food.on-plate { position: absolute; left: 50px; top: 50px; }
+.plate-box .food.on-table { position: absolute; left: 30px; top: 30px; }
 
 /* Toppings in their dishes, and one in her hand. */
 .dish { z-index: 3; cursor: pointer; }
@@ -231,5 +295,6 @@ button { font: inherit; border: 0; padding: 0; background: none; }
 .screen:not(.active) .rays,
 .screen:not(.active) .done-star,
 .screen:not(.active) .round-btn.tick,
+.screen:not(.active) .order-folk .person,
 #start-folk:not(.x) .person { animation-play-state: paused; }
 #screen-start.active #start-folk .person { animation-play-state: running; }

@@ -175,16 +175,98 @@ const Art = (() => {
     gloss(40, 68, 14, 5, 15, 0.5));
 
   // ---- the kitchen ----
-  D.window = () => svg(260, 220,
-    toon(R(14, 12, 232, 196, 30), '#ffffff', { k: 7, shade: '#d6e3f0' }) +
+  // The window is two layers so the customer can peek in between them: the sky behind, the
+  // frame and curtains in front. The glass is the (32, 30, 196, 160) rectangle.
+  const rr = (x, y, w, h, r) =>
+    `M${x + r} ${y}H${x + w - r}Q${x + w} ${y} ${x + w} ${y + r}V${y + h - r}Q${x + w} ${y + h} ${x + w - r} ${y + h}` +
+    `H${x + r}Q${x} ${y + h} ${x} ${y + h - r}V${y + r}Q${x} ${y} ${x + r} ${y}Z`;
+  D['window-sky'] = () => svg(260, 220,
     R(32, 30, 196, 160, 18)('#a6e1ff') +
     C(186, 72, 22)('#ffe066') +
     [[70, 80, 20], [92, 72, 24], [114, 82, 18]].map(([x, y, r]) => C(x, y, r)('#fff')).join('') +
-    [[150, 140, 14], [168, 134, 18], [186, 142, 13]].map(([x, y, r]) => C(x, y, r)('#fff')).join('') +
-    R(125, 30, 10, 160, 0)('#fff') + R(32, 104, 196, 10, 0)('#fff') +
+    [[150, 150, 14], [168, 144, 18], [186, 152, 13]].map(([x, y, r]) => C(x, y, r)('#fff')).join(''));
+  D['window-frame'] = () => svg(260, 220,
+    toon(P(rr(14, 12, 232, 196, 30) + rr(32, 30, 196, 160, 18), 'fill-rule="evenodd" clip-rule="evenodd"'), '#ffffff', { k: 5, shade: '#d6e3f0' }) +
     toon(P('M4 4Q64 4 74 4Q70 110 30 214L4 214Z'), '#ff9fbd', { k: 5 }) +
     toon(P('M256 4Q196 4 186 4Q190 110 230 214L256 214Z'), '#ff9fbd', { k: 5 }) +
     toon(R(0, 0, 260, 16, 8), '#ff7aa3', { k: 3 }));
+
+  // ---- cupcake and smoothie things ----
+  D.banana = () => svg(120, 120,
+    shadow(64, 104, 44, 6) +
+    toon(P('M16 36C24 92 82 112 110 84C114 78 110 72 104 75C80 88 46 74 34 34Z'), '#ffd84a', { k: 5 }) +
+    C(20, 34, 6)('#8a6a3a') + C(107, 79, 4)('#8a6a3a') +
+    gloss(44, 76, 14, 4, 35, 0.6));
+
+  D.strawberry = () => svg(100, 110,
+    toon(P('M50 104C24 90 8 60 12 42C16 26 34 22 50 28C66 22 84 26 88 42C92 60 76 90 50 104Z'), '#ff4b5c', { k: 5 }) +
+    [[34, 50], [52, 46], [68, 52], [40, 68], [60, 70], [50, 86], [28, 56]].map(([x, y]) => E(x, y, 2.5, 4)('#ffe08a')).join('') +
+    toon(P('M28 30L42 32L50 16L58 32L72 30L64 40L36 40Z'), '#4caf50', { k: 3 }) +
+    gloss(32, 44, 7, 4, -30, 0.6));
+
+  D.blueberry = () => svg(100, 100,
+    [[34, 62], [66, 62], [50, 36]].map(([x, y]) =>
+      toon(C(x, y, 22), '#5b6ee1', { k: 4 }) + C(x + 7, y - 9, 5)('#3a47a8') + gloss(x - 8, y - 6, 5, 3, -30, 0.5)).join(''));
+
+  D.orange = () => svg(100, 100,
+    toon(C(50, 50, 42), '#ff9f2e', { k: 5 }) + C(50, 50, 35)('#ffd08a') +
+    [0, 45, 90, 135, 180, 225, 270, 315].map(a =>
+      `<ellipse cx="50" cy="30" rx="7" ry="15" fill="#ffae45" transform="rotate(${a} 50 50)"/>`).join('') +
+    C(50, 50, 5)('#fff3d6') + gloss(34, 28, 9, 4, -30, 0.6));
+
+  D.straw = () => svg(60, 240,
+    line('M30 236L30 30Q30 12 48 12', '#ff6fa0', 14) +
+    line('M30 236L30 30Q30 12 48 12', '#ffffff', 14, 'stroke-dasharray="4 20"'));
+
+  D.umbrella = () => svg(120, 170,
+    line('M60 56L60 166', '#e7b27a', 5) +
+    toon(P('M6 62Q60 -12 114 62Q100 50 87 62Q74 50 60 62Q46 50 33 62Q20 50 6 62Z'), '#ff86ad', { k: 4 }) +
+    line('M60 24L34 60M60 24L86 60M60 24L60 60', '#ffc2d8', 3) +
+    C(60, 22, 5)('#ffd23f'));
+
+  D.mint = () => svg(100, 100,
+    `<g transform="rotate(-35 50 60)">${toon(P('M50 12C72 24 76 54 50 76C24 54 28 24 50 12Z'), '#5ccf7a', { k: 4 })}${line('M50 20L50 70', '#a2ecb2', 2.5)}</g>` +
+    `<g transform="rotate(35 50 60)">${toon(P('M50 12C72 24 76 54 50 76C24 54 28 24 50 12Z'), '#4cbd6a', { k: 4 })}${line('M50 20L50 70', '#a2ecb2', 2.5)}</g>`);
+
+  D.sprinkles = () => svg(100, 100,
+    [[20, 30, 20, '#ff5c8a'], [50, 22, -30, '#5ab4ee'], [70, 44, 60, '#ffd23f'], [30, 58, -50, '#7ad47c'],
+     [58, 66, 10, '#b98cf5'], [40, 40, 80, '#ff9d3c'], [76, 20, -10, '#7ad47c'], [16, 74, 40, '#5ab4ee']]
+      .map(([x, y, r, c]) => R(x, y, 20, 7, 3.5, `transform="rotate(${r} ${x + 10} ${y + 3.5})"`)(c)).join(''));
+
+  D.cherry = () => svg(100, 110,
+    line('M48 50Q52 20 74 8', '#5a8f3a', 5) +
+    toon(C(46, 72, 30), '#e53950', { k: 5 }) + gloss(34, 60, 8, 5, -30, 0.7));
+
+  D.candy = () => svg(100, 100,
+    [[32, 60, '#5ab4ee'], [68, 60, '#ffd23f'], [50, 32, '#ff5c8a']].map(([x, y, c]) =>
+      toon(C(x, y, 20), c, { k: 4 }) + gloss(x - 6, y - 7, 6, 3, -30, 0.7)).join(''));
+
+  // Piping bags, one per frosting colour.
+  const FROST = { pink: '#ff8fb8', choc: '#9a6240', mint: '#7fdcb8' };
+  for (const [name, c] of Object.entries(FROST)) {
+    D[`bag-${name}`] = () => svg(120, 210,
+      toon(P('M12 24L108 24L66 172L54 172Z'), light(c, 0.35), { k: 6 }) +
+      toon(E(60, 26, 48, 14), c, { k: 3 }) +
+      toon(P('M50 168L70 168L66 192L54 192Z'), '#b8c6ce', { k: 2 }) +
+      C(60, 198, 7)(c) + gloss(40, 70, 6, 26, -15, 0.5));
+  }
+
+  // A pitcher: a glass one shows what is inside, a coloured one shows it at the top.
+  function pitcher(body, contents, glass) {
+    const cid = id('jug');
+    const shape = P('M30 44L130 44L120 184Q118 194 106 194L54 194Q42 194 40 184Z');
+    return svg(170, 210,
+      shadow(84, 200, 56, 7) +
+      toon(P('M126 70Q164 74 160 118Q156 158 118 160L120 144Q142 140 144 116Q146 88 124 86Z'), glass ? '#bfe6fb' : body, { k: 4 }) +
+      (glass
+        ? `<clipPath id="${cid}">${shape('#000')}</clipPath>` + shape('#e8f7ff') +
+          `<g clip-path="url(#${cid})">${R(20, 76, 130, 130, 0)(contents)}${R(20, 76, 130, 10, 0)(light(contents, 0.3))}</g>`
+        : toon(shape, body, { k: 7 }) + E(80, 46, 50, 9)(contents)) +
+      toon(P('M30 44L6 30L36 64Z'), glass ? '#cfeefd' : body, { k: 2 }) +
+      gloss(48, 100, 6, 30, 0, 0.55));
+  }
+  D.jug = () => pitcher('#7ac8f6', '#fbe3b0', false);
+  D['blender-jar'] = () => pitcher(null, '#ff8fb1', true);
 
   D.shelf = () => svg(320, 170,
     toon(R(30, 44, 54, 84, 16), '#d8f2ff', { k: 4, shade: '#b6dff4' }) + R(30, 84, 54, 44, 0)('#ffb74d') +
@@ -315,6 +397,33 @@ const Art = (() => {
       gloss(70, 190, 14, 36, 30, 0.35));
   }
 
+  // The blender. Fruit goes in through the top (lid off) and is whizzed with the lid on:
+  // .v-spin turns while it runs, .v-smoothie fades in as it blends. .v-button is the big button.
+  function blender() {
+    const cl = id('bl');
+    const jar = 'M96 58L304 58L278 294L122 294Z';
+    const pieces = {
+      banana: [[150, 250], [232, 232], [190, 212], [258, 270]].map(([x, y]) => C(x, y, 17)('#ffe27a') + C(x, y, 5)('#e8c24a')).join(''),
+      strawberry: [[250, 250], [168, 226], [214, 272]].map(([x, y]) => `<path d="M${x} ${y + 16}C${x - 16} ${y + 6} ${x - 18} ${y - 12} ${x - 8} ${y - 14}C${x - 3} ${y - 15} ${x} ${y - 11} ${x} ${y - 9}C${x} ${y - 11} ${x + 3} ${y - 15} ${x + 8} ${y - 14}C${x + 18} ${y - 12} ${x + 16} ${y + 6} ${x} ${y + 16}Z" fill="#ff4b5c"/>`).join(''),
+      blueberry: [[206, 250], [140, 212], [262, 214], [186, 276], [236, 206]].map(([x, y]) => C(x, y, 11)('#5b6ee1') + C(x + 3, y - 4, 3)('#3a47a8')).join(''),
+    };
+    return svg(400, 420,
+      shadow(206, 406, 140, 10) +
+      `<path d="${jar}" fill="#e8f7ff" opacity=".95"/>` +
+      `<clipPath id="${cl}"><path d="${jar}"/></clipPath>` +
+      `<g clip-path="url(#${cl})">` +
+        `<rect class="v-milk" x="80" y="226" width="240" height="80" fill="#fbfdff"/>` +
+        `<g class="v-spin">` + Object.entries(pieces).map(([k, v]) => `<g class="v-${k}">${v}</g>`).join('') + `</g>` +
+        `<g class="v-smoothie">${R(80, 92, 240, 220, 0)('#ff8fb1')}${R(80, 92, 240, 14, 0)('#ffb3cd')}</g>` +
+      `</g>` +
+      `<path d="M112 70L128 70L138 284L126 284Z" fill="#fff" opacity=".6"/>` +
+      toon(R(88, 50, 224, 16, 8), '#cfe9f7', { k: 2 }) +
+      `<g class="v-lid">${toon(R(92, 22, 216, 34, 14), '#ff86ad', { k: 4 })}${toon(R(176, 6, 48, 22, 9), '#ff6f9c', { k: 3 })}</g>` +
+      toon(R(84, 290, 232, 106, 34), '#5ccfb4', { k: 8 }) +
+      `<g class="v-button">${toon(C(200, 344, 30), '#ff5c8a', { k: 5 })}${gloss(190, 334, 9, 5, -30, 0.7)}</g>` +
+      C(126, 344, 7)('#ffffff').replace('/>', ' opacity=".7"/>') + C(274, 344, 7)('#ffffff').replace('/>', ' opacity=".7"/>'));
+  }
+
   // The oven, in two layers so the pizza can sit between them: the body and the dark inside
   // behind, the glass door in front. .v-door folds down about its bottom edge.
   function ovenBack() {
@@ -366,5 +475,8 @@ const Art = (() => {
       gloss(110, 88, 34, 10, -40, 0.35));
   }
 
-  return { url, img, bowl, ovenBack, ovenDoor, doughBall, pizzaBase, gloss, dark, light, svg, names: () => Object.keys(D) };
+  // The drawing kit, for the dishes in dishes.js.
+  const kit = { C, E, R, P, toon, gloss, shadow, line, svg, id, dark, light };
+
+  return { url, img, bowl, blender, ovenBack, ovenDoor, doughBall, pizzaBase, FROST, kit, names: () => Object.keys(D) };
 })();

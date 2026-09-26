@@ -4,7 +4,8 @@ A cooking game for one player, age 3-4, on an iPad. **The live code is in `game/
 outside it (`js/`, `css/`, `assets/`, `tools/`, root `index.html`) are the first version, kept
 only for reference until they are removed. Do not build on them.
 
-The numeracy layer is parked for now; this version is about the cooking and the look. The art
+The numeracy layer is parked: **the priority is a fun cooking game first**, with learning added
+on top later. The art
 direction follows Bimi Boo's *Kids Cooking* app — read `game/docs/ART.md` before drawing anything.
 
 ## Stack
@@ -23,14 +24,16 @@ game/css/style.css   all styling and animation
 game/js/art.js       every drawing; Art.img(name) for repeating art, inline fns for moving parts
 game/js/sfx.js       Web Audio sound effects
 game/js/kit.js       stage scaling, drag/tap, fly, the demonstrating hand (Hint), particles (Fx)
-game/js/pizza.js     the pizza's state and renderer (carries across steps)
-game/js/steps.js     the cooking steps: mix, stir, roll, sauce, toppings, bake, cut, serve
+game/js/dishes.js    the dishes (pizza, cupcakes, smoothie): state + renderer + a shared interface
+game/js/steps.js     the cooking steps: order, mix, stir, blend, pour, frost, roll, sauce,
+                     decorate, bake, cut, serve
 game/js/recipes.js   the recipe book (data) and the customers
-game/js/app.js       screen flow: start → menu → cook → done
+game/js/app.js       screen flow: start → menu → cook (order, steps, serve) → done
 game/tools/art-sheet.html   every drawing on one page
 ```
 
-Open `game/index.html?step=bake` (any step name, or `menu` / `done`) to jump straight to a step.
+Open `game/index.html?recipe=cupcakes&step=frost` (any recipe id and step name, or `step=menu` /
+`step=done`) to jump straight to a step. `Steps.skip` fills in what the earlier steps would have done.
 
 ## The stage
 
@@ -66,11 +69,20 @@ a handful, not a hundred.
 
 ## Adding things
 
-**A step** — a function in `game/js/steps.js`: `(root, meal, done) => ({ stop() })`. Build into
-`root`, call `done()` once, and give `Hint.set()` a path for the hand. Add it to the returned object.
+**A recipe** — an entry in `RECIPES` in `game/js/recipes.js`: the dish it makes and its steps,
+each `{ do: '<step>', ...details }` (which items go in, which tool, which toppings). No code if it
+reuses existing steps and dishes. The customer's order is added in front of every recipe.
 
-**A recipe** — an entry in `RECIPES` in `game/js/recipes.js` naming its steps. No code if it
-reuses existing steps. (A second recipe will need `meal` generalised beyond `pizza`.)
+**A step** — a function in `game/js/steps.js`: `(root, meal, done, spec) => ({ stop() })`. `meal`
+is `{ dish, state, added, customer }`; `spec` is the recipe's entry. Build into `root` (a fresh
+element per step), call `done()` once, give `Hint.set()` a path for the hand, and add an entry to
+`Steps.skip` if it leaves state behind.
+
+**A dish** — an object in `game/js/dishes.js` answering the shared interface documented at the
+top of the file (make, place a topping, fill, bake, bites...). Only implement what its steps use.
+
+**The customer** orders at the start (a speech bubble with the dish), watches through the window
+while she cooks, cheers when each step finishes, and eats it at the end.
 
 **A customer** — a colour set in `ANIMALS` in `game/js/art.js` (plus ears/markings in `face()`)
 and its name in `CUSTOMERS`.
