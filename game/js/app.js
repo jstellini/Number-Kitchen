@@ -1,4 +1,4 @@
-// Screen flow: start → menu → cook (one step at a time) → done.
+// Screen flow: start → friends (who are we cooking for?) → menu → cook (one step at a time) → done.
 const App = (() => {
   const $ = s => document.querySelector(s);
   const { tap, put } = Kit;
@@ -6,6 +6,7 @@ const App = (() => {
   const { icon } = Kit;
 
   let current = null, step = null, meal = null, recipe = null, index = 0;
+  let friend = CUSTOMERS[0];            // who we are cooking for
 
   function show(name) {
     document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === `screen-${name}`));
@@ -21,7 +22,7 @@ const App = (() => {
 
   // ---------- start ----------
   function buildStart() {
-    folk($('#start-folk'), CUSTOMERS);
+    folk($('#start-folk'), CUSTOMERS.slice(0, 4));
     const props = $('#start-props');
     props.appendChild(put(Art.img('flour'), 150, 560, 170, 'deco'));
     props.appendChild(put(Art.img('egg'), 270, 640, 100, 'deco'));
@@ -34,12 +35,39 @@ const App = (() => {
       p.classList.add('glad');
       setTimeout(() => p.classList.remove('glad'), 900);
     }));
-    tap($('#btn-play'), () => { Sfx.unlock(); Sfx.pop(); openMenu(); });
+    tap($('#btn-play'), () => { Sfx.unlock(); Sfx.pop(); openFriends(); });
+  }
+
+  // ---------- who's hungry? ----------
+  function openFriends() {
+    stopStep();
+    const cards = $('#friend-cards');
+    cards.innerHTML = '';
+    let chosen = false;
+    CUSTOMERS.forEach((k, i) => {
+      const card = document.createElement('div');
+      card.className = 'friend';
+      card.style.animationDelay = `${i * 0.05}s`;
+      card.innerHTML = `<div class="person">${Art.img(k, 'idle')}${Art.img(k + '-happy', 'happy')}</div>` +
+        `<div class="tag">${Art.ANIMALS[k].name}</div>`;
+      tap(card, () => {
+        if (chosen) return;
+        chosen = true;
+        friend = k;
+        card.classList.add('picked');
+        Sfx.yay();
+        Fx.sparkle(Kit.centre(card), 14);
+        setTimeout(openMenu, 700);
+      });
+      cards.appendChild(card);
+    });
+    show('friends');
   }
 
   // ---------- menu ----------
   function openMenu() {
     stopStep();
+    $('#menu-friend').innerHTML = `<div class="person">${Art.img(friend, 'idle')}${Art.img(friend + '-happy', 'happy')}</div>`;
     const cards = $('#menu-cards');
     cards.innerHTML = '';
     for (const r of RECIPES) {
@@ -62,7 +90,7 @@ const App = (() => {
 
   function newMeal(r) {
     const dish = Dishes[r.dish];
-    return { dish, state: dish.blank(), added: [], customer: Kit.pick(CUSTOMERS) };
+    return { dish, state: dish.blank(), added: [], customer: friend };
   }
 
   function startRecipe(r) {
@@ -149,8 +177,14 @@ const App = (() => {
     document.querySelector('.prop-shelf').style.backgroundImage = `url(${Art.url('shelf')})`;
     buildStart();
     document.querySelectorAll('.round-btn.back').forEach(b => {
-      b.innerHTML = icon(b.dataset.go === 'menu' ? 'home' : 'back');
-      tap(b, () => { Sfx.pop(); b.dataset.go === 'menu' ? openMenu() : (stopStep(), show('start')); });
+      const go = b.dataset.go;
+      b.innerHTML = icon(go === 'menu' ? 'home' : 'back');
+      tap(b, () => {
+        Sfx.pop();
+        if (go === 'menu') openMenu();
+        else if (go === 'friends') openFriends();
+        else { stopStep(); show('start'); }
+      });
     });
     $('#btn-again').innerHTML = icon('again');
     $('#btn-home').innerHTML = icon('home');
@@ -158,8 +192,10 @@ const App = (() => {
     tap($('#btn-home'), () => { Sfx.pop(); openMenu(); });
     document.addEventListener('pointerdown', () => Sfx.unlock(), { once: true });
     const q = new URLSearchParams(location.search), jump = q.get('step');
+    if (CUSTOMERS.includes(q.get('friend'))) friend = q.get('friend');
     if (jump === 'done') { recipe = RECIPES[0]; meal = newMeal(recipe); finishRecipe(); }
     else if (jump === 'menu') openMenu();
+    else if (jump === 'friends') openFriends();
     else if (!jump || !devJump(q.get('recipe'), jump)) show('start');
   }
 

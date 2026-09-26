@@ -15,8 +15,10 @@ const Steps = (() => {
   const { put, drag, tap, moveTo, fly, home, wait, lerp, clamp, rand, dist } = Kit;
 
   // ---------- shared furniture ----------
-  // The board's round is centred at (cx, cy) with the handle off to the right.
-  function board(root, cx, cy, w = 470) {
+  // The board's round is centred at (cx, cy) with the handle off to the right. Its round is
+  // 384/470 of its width; pass the pizza's width as `under` to size it with a rim to spare.
+  function board(root, cx, cy, w = 470, under = 0) {
+    if (under) w = under * 470 / 360;
     const el = put(Art.img('board'), cx + w * 35 / 470, cy, w, 'board');
     root.appendChild(el);
     return el;
@@ -282,7 +284,7 @@ const Steps = (() => {
   // Pour from the jug into each cup, or from the blender into the glass.
   // ---------------------------------------------------------------------------------------
   function pour(root, meal, done, spec) {
-    const dish = meal.dish, s = meal.state, W = 400, C = { x: 420, y: 500 };
+    const dish = meal.dish, s = meal.state, W = 460, C = { x: 410, y: 500 };
     const { el } = foodAt(root, meal, C.x, C.y, W);
     const T = dish.targets.map(u => toStage(u, C, W));
     const HOME = { x: 860, y: 470 }, TILT = 'rotate(-40deg)', SPOUT = { x: -106, y: -5 };
@@ -365,7 +367,7 @@ const Steps = (() => {
   // Pipe frosting onto each cupcake, in whichever colour she picks up.
   // ---------------------------------------------------------------------------------------
   function frost(root, meal, done) {
-    const dish = meal.dish, s = meal.state, W = 400, C = { x: 420, y: 480 };
+    const dish = meal.dish, s = meal.state, W = 460, C = { x: 410, y: 490 };
     const { el } = foodAt(root, meal, C.x, C.y, W);
     const TOPS = dish.CUPS.map(c => toStage({ x: c.x, y: c.y - 40 }, C, W));
     const TIP = 75;
@@ -425,10 +427,10 @@ const Steps = (() => {
   // Roll the ball of dough out flat.
   // ---------------------------------------------------------------------------------------
   function roll(root, meal, done) {
-    const C = { x: 512, y: 470 }, NEED = 1500;
-    board(root, C.x, C.y);
-    const base = foodAt(root, meal, C.x, C.y, 370, 'rolling');
-    const ball = put(Art.doughBall(), C.x, C.y, 230, 'ball');
+    const C = { x: 512, y: 480 }, W = 430, NEED = 1500;
+    board(root, C.x, C.y, 0, W);
+    const base = foodAt(root, meal, C.x, C.y, W, 'rolling');
+    const ball = put(Art.doughBall(), C.x, C.y, 265, 'ball');
     root.appendChild(ball);
     const pin = put(Art.img('rollingpin'), C.x, 690, 360, 'pin');
     root.appendChild(pin);
@@ -484,8 +486,8 @@ const Steps = (() => {
   // Paint the sauce on with the ladle. Anywhere she touches the pizza gets sauce.
   // ---------------------------------------------------------------------------------------
   function sauce(root, meal, done) {
-    const C = { x: 512, y: 470 }, W = 370, BLOB = 38;
-    board(root, C.x, C.y);
+    const C = { x: 512, y: 480 }, W = 430, BLOB = 38;
+    board(root, C.x, C.y, 0, W);
     const { el: pz } = foodAt(root, meal, C.x, C.y, W);
     const layer = pz.querySelector('.p-sauce');
     // The ladle's bowl is 88px below the element's centre; it rides a little above her finger.
@@ -521,7 +523,7 @@ const Steps = (() => {
       let k = 0;
       auto = loop(dt => {
         k = Math.min(1, k + dt / 1600);
-        const a = k * Math.PI * 6, r = (1 - k) * 150;
+        const a = k * Math.PI * 6, r = (1 - k) * 175;
         paint({ x: C.x + Math.cos(a) * r, y: C.y + 40 + Math.sin(a) * r });
         if (k >= 1 || finished) { auto = null; return false; }
       });
@@ -546,9 +548,9 @@ const Steps = (() => {
   // Decorate: take a topping from a dish and drop it anywhere on the food.
   // ---------------------------------------------------------------------------------------
   function decorate(root, meal, done, spec) {
-    const dish = meal.dish, W = dish.board ? 370 : 400, C = { x: 390, y: dish.board ? 470 : 480 };
+    const dish = meal.dish, W = dish.board ? 425 : 460, C = { x: dish.board ? 372 : 380, y: dish.board ? 485 : 490 };
     const MAX = 30, ENOUGH = 5;
-    if (dish.board) board(root, C.x, C.y);
+    if (dish.board) board(root, C.x, C.y, 0, W);
     const { el } = foodAt(root, meal, C.x, C.y, W);
     const spots = [[765, 372], [915, 372], [765, 518], [915, 518], [765, 664]];
     let finished = false;
@@ -587,7 +589,7 @@ const Steps = (() => {
           root.appendChild(ghost);
           moveTo(ghost, { x: p.x, y: p.y - 30 }, 'scale(1.2)');
         },
-        move: p => moveTo(ghost, { x: p.x, y: p.y - 30 }, 'scale(1.2)'),
+        move: p => { moveTo(ghost, { x: p.x, y: p.y - 30 }, 'scale(1.2)'); Fx.swipe({ x: p.x, y: p.y - 30 }, ghost); },
         end: async (p, moved) => {
           const g = ghost; ghost = null;
           bowl.classList.remove('picked');
@@ -665,21 +667,27 @@ const Steps = (() => {
   // Cut it into slices: roll the cutter along each dotted line.
   // ---------------------------------------------------------------------------------------
   function cut(root, meal, done) {
-    const C = { x: 512, y: 470 }, W = 380;
-    board(root, C.x, C.y);
+    const C = { x: 512, y: 480 }, W = 430;
+    board(root, C.x, C.y, 0, W);
     const { el: pz } = foodAt(root, meal, C.x, C.y, W, 'cutting');
     // The wheel is 78px above the element's centre; it rides a little above her finger.
     const cutter = put(Art.img('cutter'), 880, 520, 280, 'cutter');
     root.appendChild(cutter);
     const OFF = { x: 0, y: -50 };
-    let trail = [], finished = false, auto = false;
+    let trail = [], finished = false, auto = false, stroke = 0;
     const cuts = meal.state.cuts;
+    const JUICE = ['#dc3f2e', '#e8553f', '#ffd566', '#f3c27c'];
 
     const uncut = () => Pizza.ANGLES.filter(a => !cuts.includes(a));
     const dirOf = a => ({ x: Math.cos(a * Math.PI / 180), y: Math.sin(a * Math.PI / 180) });
 
-    function slice(a) {
+    function slice(a, tapped) {
       cuts.push(a);
+      // A glowing streak along the cut (the trail already drew one if she swiped), and juice
+      // and crumbs flying off it.
+      const d = dirOf(a), len = W / 2 - 10;
+      if (tapped) Fx.streak({ x: C.x - d.x * len, y: C.y - d.y * len }, { x: C.x + d.x * len, y: C.y + d.y * len }, `cut${a}`);
+      for (const k of [-0.7, -0.3, 0.1, 0.5, 0.85]) Fx.spray({ x: C.x + d.x * len * k, y: C.y + d.y * len * k }, JUICE, 6);
       const r = pz.querySelector(`.p-cut[data-a="${a}"]`);
       r.classList.add('on');
       r.previousElementSibling.classList.add('gone');
@@ -696,6 +704,7 @@ const Steps = (() => {
     function wheel(p) {
       const w = { x: p.x + OFF.x, y: p.y + OFF.y };
       moveTo(cutter, { x: w.x, y: w.y + 78 });
+      Fx.swipe(w, `cutter${stroke}`);
       trail.push(w);
       if (trail.length > 80) trail.shift();
       // Has the wheel travelled far enough along any uncut line, while staying close to it?
@@ -735,11 +744,11 @@ const Steps = (() => {
       await an.finished;
       moveTo(cutter, { x: C.x + d.x * r, y: C.y + d.y * r + 78 });
       auto = false;
-      if (!finished) slice(a);
+      if (!finished) slice(a, true);
     }
 
     drag(root, {
-      start: () => { if (finished || auto) return false; trail = []; },
+      start: () => { if (finished || auto) return false; trail = []; stroke++; },
       move: p => wheel(p),
       end: (p, moved) => { if (!moved) autoCut(dist(p, C) < W / 2 ? p : null); },
     });
@@ -758,16 +767,18 @@ const Steps = (() => {
   // ---------------------------------------------------------------------------------------
   function serve(root, meal, done) {
     const who = meal.customer, dish = meal.dish;
-    const FACE = { x: 512, y: 200 }, TABLE = { x: 512, y: 440 }, START = { x: 512, y: 600 };
+    const FACE = { x: 512, y: 200 }, TABLE = { x: 512, y: 430 }, START = { x: 512, y: 555 };
     const folk = document.createElement('div');
     folk.className = 'folk solo serve-folk';
     folk.innerHTML = `<div class="person">${Art.img(who, 'idle')}${Art.img(who + '-happy', 'happy')}</div>`;
     root.appendChild(folk);
     const person = folk.querySelector('.person');
 
-    const tray = put(dish.plate ? Art.img('plate') : '', START.x, START.y, 400, 'plate-box');
-    const food = dish.make(meal.state, dish.plate ? 300 : 340);
-    food.classList.add(dish.plate ? 'on-plate' : 'on-table');
+    const T = 460, F = dish.plate ? 345 : 390;
+    const tray = put(dish.plate ? Art.img('plate') : '', START.x, START.y, T, 'plate-box');
+    const food = dish.make(meal.state, F);
+    food.classList.add('served');
+    food.style.left = food.style.top = `${(T - F) / 2}px`;
     tray.appendChild(food);
     root.appendChild(tray);
     let state = 'ready';

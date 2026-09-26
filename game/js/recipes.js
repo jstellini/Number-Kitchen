@@ -45,5 +45,6 @@ const RECIPES = [
   },
 ];
 
-// The customers. Each is drawn in art.js with an idle and a happy face.
-const CUSTOMERS = ['bear', 'bunny', 'cat', 'panda'];
+// The customers, in the order they appear on the "who's hungry?" screen. Each is drawn in
+// art.js (ANIMALS: colours, ears, outfit, name) with an idle and a happy pose.
+const CUSTOMERS = ['bear', 'bunny', 'cat', 'panda', 'pig', 'puppy', 'mouse', 'fox'];

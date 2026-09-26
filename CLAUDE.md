@@ -28,12 +28,13 @@ game/js/dishes.js    the dishes (pizza, cupcakes, smoothie): state + renderer + 
 game/js/steps.js     the cooking steps: order, mix, stir, blend, pour, frost, roll, sauce,
                      decorate, bake, cut, serve
 game/js/recipes.js   the recipe book (data) and the customers
-game/js/app.js       screen flow: start → menu → cook (order, steps, serve) → done
+game/js/app.js       screen flow: start → friends (who's hungry?) → menu → cook (order, steps,
+                     serve) → done
 game/tools/art-sheet.html   every drawing on one page
 ```
 
-Open `game/index.html?recipe=cupcakes&step=frost` (any recipe id and step name, or `step=menu` /
-`step=done`) to jump straight to a step. `Steps.skip` fills in what the earlier steps would have done.
+Open `game/index.html?recipe=cupcakes&step=frost&friend=fox` (any recipe id, step name and
+customer, or `step=friends` / `step=menu` / `step=done`) to jump straight to a step. `Steps.skip` fills in what the earlier steps would have done.
 
 ## The stage
 
@@ -81,11 +82,11 @@ element per step), call `done()` once, give `Hint.set()` a path for the hand, an
 **A dish** — an object in `game/js/dishes.js` answering the shared interface documented at the
 top of the file (make, place a topping, fill, bake, bites...). Only implement what its steps use.
 
-**The customer** orders at the start (a speech bubble with the dish), watches through the window
-while she cooks, cheers when each step finishes, and eats it at the end.
+**The customer** is chosen on the "who's hungry?" screen, orders at the start (a speech bubble
+with the dish), pops up from the corner to cheer each finished step, and eats it at the end.
 
-**A customer** — a colour set in `ANIMALS` in `game/js/art.js` (plus ears/markings in `face()`)
-and its name in `CUSTOMERS`.
+**A customer** — an entry in `ANIMALS` in `game/js/art.js` (name, colours, ear style, outfit,
+tail; drawn by `figure()`) and its key in `CUSTOMERS` in `game/js/recipes.js`.
 
 ## Testing
 

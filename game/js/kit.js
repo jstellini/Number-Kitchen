@@ -154,13 +154,15 @@ const Hint = (() => {
   };
 })();
 
-// Celebration particles on one canvas above everything. Only runs while there is something to draw.
+// Particles and swipe trails, on one canvas above everything. Only runs while there is
+// something to draw. No canvas shadows or blur: the glow is a wide, pale stroke under a white one.
 const Fx = (() => {
   const cv = document.getElementById('fx');
   const cx = cv.getContext('2d');
   const COLORS = ['#ff5c8a', '#ffd23f', '#5ab4ee', '#7ad47c', '#ff9d3c', '#b98cf5'];
   const TWINKLE = ['#ffffff', '#ffffff', '#fff6c2', '#ffe066'];
-  let parts = [], running = false;
+  const TRAIL_MS = 280;
+  let parts = [], trail = [], running = false;
 
   function size() {
     const r = devicePixelRatio > 1 ? 2 : 1;
@@ -170,8 +172,30 @@ const Fx = (() => {
   addEventListener('resize', size);
   size();
 
-  function loop() {
+  // Stage point → screen point, and the stage's scale.
+  function screen(p) {
+    const r = Kit.stage.getBoundingClientRect(), s = r.width / 1024;
+    return { x: r.left + p.x * s, y: r.top + p.y * s, s };
+  }
+
+  function drawTrail(now) {
+    trail = trail.filter(q => now - q.t < TRAIL_MS);
+    cx.lineCap = 'round';
+    for (const pass of [{ c: 'rgba(190, 150, 250, .45)', k: 1.9 }, { c: '#ffffff', k: 1 }]) {
+      cx.strokeStyle = pass.c;
+      for (let i = 1; i < trail.length; i++) {
+        const a = trail[i - 1], b = trail[i];
+        if (a.id !== b.id) continue;
+        const life = 1 - (now - b.t) / TRAIL_MS;
+        cx.lineWidth = Math.max(1, 16 * b.s * life * pass.k);
+        cx.beginPath(); cx.moveTo(a.x, a.y); cx.lineTo(b.x, b.y); cx.stroke();
+      }
+    }
+  }
+
+  function loop(now) {
     cx.clearRect(0, 0, innerWidth, innerHeight);
+    if (trail.length) drawTrail(now);
     parts = parts.filter(p => p.life > 0);
     for (const p of parts) {
       p.vy += p.g; p.x += p.vx; p.y += p.vy; p.rot += p.vr; p.life--;
@@ -179,7 +203,9 @@ const Fx = (() => {
       cx.globalAlpha = Math.min(1, p.life / 20);
       cx.translate(p.x, p.y); cx.rotate(p.rot);
       cx.fillStyle = p.c;
-      if (p.star) {
+      if (p.drop) {
+        cx.beginPath(); cx.arc(0, 0, p.s, 0, Math.PI * 2); cx.fill();
+      } else if (p.star) {
         // a four-point twinkle
         cx.beginPath();
         for (let i = 0; i < 8; i++) {
@@ -192,18 +218,46 @@ const Fx = (() => {
       }
       cx.restore();
     }
-    if (parts.length) requestAnimationFrame(loop); else { running = false; cx.clearRect(0, 0, innerWidth, innerHeight); }
+    if (parts.length || trail.length) requestAnimationFrame(loop);
+    else { running = false; cx.clearRect(0, 0, innerWidth, innerHeight); }
   }
   function go() { if (!running) { running = true; requestAnimationFrame(loop); } }
 
   // A burst of little stars at a stage point.
   function sparkle(p, n = 14) {
-    const r = Kit.stage.getBoundingClientRect(), s = r.width / 1024;
-    const x = r.left + p.x * s, y = r.top + p.y * s;
+    const { x, y } = screen(p);
     for (let i = 0; i < n; i++) {
       const a = Math.random() * Math.PI * 2, v = 2 + Math.random() * 5;
       parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 2, g: 0.12, rot: 0, vr: 0.1,
         s: 8 + Math.random() * 10, c: Kit.pick(TWINKLE), life: 40 + Math.random() * 20, star: true });
+    }
+    go();
+  }
+
+  // One point of a glowing swipe trail. Points with the same id join up; start a new id for
+  // each new swipe so two strokes never connect.
+  function swipe(p, id) {
+    const q = screen(p);
+    trail.push({ x: q.x, y: q.y, s: q.s, t: performance.now(), id });
+    go();
+  }
+  // A streak drawn all at once from a to b, fading from a's end first, for a cut made by a tap.
+  function streak(a, b, id) {
+    const now = performance.now();
+    for (let i = 0; i <= 16; i++) {
+      const q = screen({ x: a.x + (b.x - a.x) * i / 16, y: a.y + (b.y - a.y) * i / 16 });
+      trail.push({ x: q.x, y: q.y, s: q.s, t: now - (16 - i) * 8, id });
+    }
+    go();
+  }
+
+  // Juice and crumbs flying off a cut.
+  function spray(p, colors, n = 10) {
+    const { x, y, s } = screen(p);
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2, v = (2 + Math.random() * 5) * s;
+      parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 3 * s, g: 0.3 * s, rot: 0, vr: 0,
+        s: (4.5 + Math.random() * 5) * s, c: Kit.pick(colors), life: 30 + Math.random() * 15, drop: true });
     }
     go();
   }
@@ -217,5 +271,5 @@ const Fx = (() => {
     go();
   }
 
-  return { sparkle, confetti };
+  return { sparkle, swipe, streak, spray, confetti };
 })();

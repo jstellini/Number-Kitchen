@@ -307,73 +307,144 @@ const Art = (() => {
     gloss(26, 22, 9, 5, -30, 0.7));
 
   // ---- the customers ----
-  // One face kit; each animal is a set of colours plus its ears and markings.
+  // One body kit for everyone: a big head (ears, face, markings), a small body in an outfit,
+  // arms that hang down or go up when they are happy, short legs and shoes. Each animal is a set
+  // of colours plus its ear style, muzzle, tail and clothes. Our own cast: not Bimi's.
+  //   ears:   round | long | pointy | floppy | big | pig
+  //   outfit: overalls | dress | shorts
   const ANIMALS = {
-    bear:  { fur: '#c68a5c', inner: '#f3c9a0', muzzle: '#f6dcbc', shirt: '#5ab4ee', ink: '#4a2c2a', iris: '#8a5a2b' },
-    bunny: { fur: '#fbf5f2', shade: '#e3d2d8', inner: '#ffb3c9', muzzle: '#ffffff', shirt: '#ffcf3f', ink: '#5a3342', iris: '#4a90d9' },
-    cat:   { fur: '#9aa0ab', shade: '#7c828e', inner: '#ffb6c4', muzzle: '#e8ebef', shirt: '#46404f', ink: '#3b3844', iris: '#5aa84a' },
-    panda: { fur: '#ffffff', shade: '#dde2ea', inner: '#46435a', muzzle: '#ffffff', shirt: '#ff86ad', ink: '#35334a', iris: '#7a5a44' },
+    bear:  { name: 'Bruno',   ears: 'round',  fur: '#c68a5c', inner: '#f3c9a0', muzzle: '#f6dcbc', ink: '#4a2c2a', iris: '#8a5a2b',
+             outfit: 'overalls', top: '#ffd23f', bottom: '#4a86e8', shoe: '#8a5a3a', tail: 'stub' },
+    bunny: { name: 'Poppy',   ears: 'long',   fur: '#fbf5f2', shade: '#e3d2d8', inner: '#ffb3c9', muzzle: '#ffffff', ink: '#5a3342', iris: '#4a90d9',
+             outfit: 'dress', top: '#ffb3cf', bottom: '#ff7aa8', shoe: '#e8457a', nose: '#ff7f9c', teeth: true },
+    cat:   { name: 'Milo',    ears: 'pointy', fur: '#9aa0ab', shade: '#7c828e', inner: '#ffb6c4', muzzle: '#e8ebef', ink: '#3b3844', iris: '#5aa84a',
+             outfit: 'shorts', top: '#46404f', bottom: '#f2b53c', shoe: '#e25c5c', nose: '#ff7f9c', stripes: '#727884', whiskers: '#6c7280', tail: 'long' },
+    panda: { name: 'Pip',     ears: 'round',  fur: '#ffffff', shade: '#dde2ea', inner: '#46435a', muzzle: '#ffffff', ink: '#35334a', iris: '#7a5a44',
+             outfit: 'overalls', top: '#7ad47c', bottom: '#8d6ad8', shoe: '#ffd23f', patches: true, earFill: '#46435a' },
+    pig:   { name: 'Rosie',   ears: 'pig',    fur: '#ffbccd', shade: '#f29bb3', inner: '#ff8fab', ink: '#7a3148', iris: '#6b4a3a',
+             outfit: 'dress', top: '#9fe3cf', bottom: '#5ccfb4', shoe: '#ff7aa8', snout: '#ff9fb8', tail: 'curl' },
+    puppy: { name: 'Biscuit', ears: 'floppy', fur: '#e8b77a', inner: '#a86f3c', muzzle: '#fff1dc', ink: '#4a2c1e', iris: '#8a5a2b',
+             outfit: 'shorts', top: '#ff8a5c', bottom: '#5a8de0', shoe: '#ffffff', spot: '#c98f52', tail: 'stub' },
+    mouse: { name: 'Mimi',    ears: 'big',    fur: '#b9bcc6', shade: '#9a9dab', inner: '#ffb6c4', muzzle: '#eceef2', ink: '#3f4050', iris: '#5a5a9a',
+             outfit: 'dress', top: '#d4bdf7', bottom: '#a77be8', shoe: '#ff7aa8', nose: '#ff7f9c', whiskers: '#7c7f8c', tail: 'thin' },
+    fox:   { name: 'Ziggy',   ears: 'pointy', fur: '#f58a3c', inner: '#4a2c2a', muzzle: '#fff6ec', ink: '#5a2a14', iris: '#c88a1e',
+             outfit: 'overalls', top: '#9fd3f5', bottom: '#3f8a56', shoe: '#5a3a2a', tail: 'bushy', wideMuzzle: true },
   };
 
-  function face(kind, mood) {
-    const a = ANIMALS[kind];
+  function figure(kind, mood) {
+    const a = ANIMALS[kind], happy = mood === 'happy';
     const fur = (s, o = {}) => toon(s, a.fur, { k: 8, shade: a.shade, ...o });
     let s = '';
-    // shoulders
-    s += toon(E(120, 272, 98, 66), a.shirt, { k: 8 });
-    s += toon(P('M92 210Q120 236 148 210L150 222Q120 250 90 222Z'), '#ffffff', { k: 3, shade: '#e1e8f0' });
-    // ears (behind the head)
-    if (kind === 'bunny') {
+
+    // ---- tail, behind everything ----
+    if (a.tail === 'long') s += line('M146 322C196 320 210 280 196 250', dark(a.fur, 0.3), 20) + line('M146 322C196 320 210 280 196 250', a.fur, 13);
+    if (a.tail === 'thin') s += line('M146 326C200 330 214 290 200 270', dark(a.fur, 0.3), 8) + line('M146 326C200 330 214 290 200 270', '#f3b6c4', 4);
+    if (a.tail === 'curl') s += line('M150 318C176 318 180 296 166 294C154 292 156 310 170 306', dark(a.fur, 0.25), 7);
+    if (a.tail === 'bushy') s += toon(E(186, 300, 30, 48, 'transform="rotate(35 186 300)"'), a.fur, { k: 6 }) +
+      toon(E(206, 268, 16, 20, 'transform="rotate(35 206 268)"'), '#ffffff', { k: 3, shade: '#e8dcd0' });
+    if (a.tail === 'stub') s += toon(C(156, 316, 14), a.fur, { k: 3, shade: a.shade });
+
+    // ---- legs and shoes ----
+    const legC = a.outfit === 'overalls' ? a.bottom : a.fur;
+    s += toon(R(90, 312, 26, 50, 12), legC, { k: 4, shade: legC === a.fur ? a.shade : undefined });
+    s += toon(R(124, 312, 26, 50, 12), legC, { k: 4, shade: legC === a.fur ? a.shade : undefined });
+    s += toon(E(100, 364, 22, 12), a.shoe, { k: 3, shade: a.shoe === '#ffffff' ? '#dfe4ec' : undefined });
+    s += toon(E(140, 364, 22, 12), a.shoe, { k: 3, shade: a.shoe === '#ffffff' ? '#dfe4ec' : undefined });
+
+    // ---- body and outfit ----
+    s += toon(P('M82 204Q70 300 86 334L154 334Q170 300 158 204Z'), a.top, { k: 6 });
+    if (a.outfit === 'overalls') {
+      s += toon(P('M94 250L146 250L154 334L86 334Z'), a.bottom, { k: 5 });
+      s += line('M98 252L90 208M142 252L150 208', a.bottom, 7);
+      s += C(100, 262, 4.5)('#ffe27a') + C(140, 262, 4.5)('#ffe27a');
+      s += R(108, 272, 24, 18, 5)(dark(a.bottom, 0.18));
+    } else if (a.outfit === 'dress') {
+      s += toon(P('M86 262L154 262L178 336Q120 350 62 336Z'), a.bottom, { k: 6 });
+      s += [[92, 318], [120, 300], [146, 322], [108, 336], [136, 340]].map(([x, y]) => C(x, y, 4.5)('#ffffff').replace('/>', ' opacity=".7"/>')).join('');
+    } else {
+      s += toon(P('M84 296L156 296L160 336L124 336L120 318L116 336L80 336Z'), a.bottom, { k: 5 });
+    }
+    s += toon(P('M96 206Q120 226 144 206L146 216Q120 238 94 216Z'), '#ffffff', { k: 2, w: 2.5, shade: '#e1e8f0' });
+
+    // ---- arms: hanging down, or up in the air for joy ----
+    const arm = (sx, ang) => `<g transform="rotate(${ang} ${sx} 214)">` +
+      toon(R(sx - 13, 212, 26, 58, 13), a.top, { k: 3 }) +
+      toon(C(sx, 276, 15), a.fur, { k: 3, shade: a.shade }) + `</g>`;
+    s += happy ? arm(80, 125) + arm(160, -125) : arm(80, 18) + arm(160, -18);
+
+    // ---- ears behind the head ----
+    const earFill = a.earFill || a.fur;
+    if (a.ears === 'long') {
       s += fur(E(88, 46, 20, 56, 'transform="rotate(-10 88 46)"')) + E(88, 50, 9, 40, 'transform="rotate(-10 88 50)"')(a.inner);
       s += fur(E(152, 46, 20, 56, 'transform="rotate(10 152 46)"')) + E(152, 50, 9, 40, 'transform="rotate(10 152 50)"')(a.inner);
-    } else if (kind === 'cat') {
-      s += fur(P('M50 96L58 26L108 64Z')) + P('M62 82L66 44L94 66Z')(a.inner);
-      s += fur(P('M190 96L182 26L132 64Z')) + P('M178 82L174 44L146 66Z')(a.inner);
-    } else {
-      const ear = kind === 'panda' ? a.inner : a.fur;
-      s += toon(C(58, 60, 28), ear, { k: 5, shade: kind === 'panda' ? '#2a2838' : a.shade });
-      s += toon(C(182, 60, 28), ear, { k: 5, shade: kind === 'panda' ? '#2a2838' : a.shade });
-      if (kind === 'bear') s += C(58, 60, 14)(a.inner) + C(182, 60, 14)(a.inner);
+    } else if (a.ears === 'pointy') {
+      s += fur(P('M48 98L58 24L110 64Z')) + P('M62 82L66 44L94 66Z')(a.inner);
+      s += fur(P('M192 98L182 24L130 64Z')) + P('M178 82L174 44L146 66Z')(a.inner);
+    } else if (a.ears === 'pig') {
+      s += fur(P('M52 84L54 34L100 58Z')) + P('M62 72L63 46L88 60Z')(a.inner);
+      s += fur(P('M188 84L186 34L140 58Z')) + P('M178 72L177 46L152 60Z')(a.inner);
+    } else if (a.ears === 'big') {
+      s += fur(C(52, 72, 40)) + C(52, 72, 26)(a.inner);
+      s += fur(C(188, 72, 40)) + C(188, 72, 26)(a.inner);
+    } else if (a.ears === 'round') {
+      s += toon(C(58, 60, 28), earFill, { k: 5, shade: a.earFill ? '#2a2838' : a.shade });
+      s += toon(C(182, 60, 28), earFill, { k: 5, shade: a.earFill ? '#2a2838' : a.shade });
+      if (!a.earFill) s += C(58, 60, 14)(a.inner) + C(182, 60, 14)(a.inner);
     }
-    // head
+
+    // ---- head ----
     s += fur(C(120, 128, 82));
-    if (kind === 'cat') s += line('M108 58L112 76M120 54L120 74M132 58L128 76', '#727884', 6);
-    if (kind === 'panda') {
+    if (a.stripes) s += line('M108 58L112 76M120 54L120 74M132 58L128 76', a.stripes, 6);
+    if (a.spot) s += E(152, 104, 26, 22, 'transform="rotate(20 152 104)"')(a.spot);
+    if (a.patches) {
       s += `<ellipse cx="86" cy="120" rx="22" ry="28" fill="${a.inner}" transform="rotate(25 86 120)"/>`;
       s += `<ellipse cx="154" cy="120" rx="22" ry="28" fill="${a.inner}" transform="rotate(-25 154 120)"/>`;
     }
-    // muzzle, cheeks, nose
-    s += E(120, 158, kind === 'bunny' ? 28 : 38, kind === 'bunny' ? 22 : 28)(a.muzzle);
+    if (a.ears === 'floppy') {
+      s += toon(E(46, 132, 22, 48, 'transform="rotate(18 46 132)"'), a.inner, { k: 4 });
+      s += toon(E(194, 132, 22, 48, 'transform="rotate(-18 194 132)"'), a.inner, { k: 4 });
+    }
+
+    // ---- muzzle, cheeks, nose ----
+    if (a.snout) {
+      s += toon(E(120, 160, 30, 22), a.snout, { k: 3 }) + E(110, 160, 5, 7)(dark(a.snout, 0.45)) + E(130, 160, 5, 7)(dark(a.snout, 0.45));
+    } else {
+      if (a.wideMuzzle) s += P('M52 140Q84 128 120 150Q156 128 188 140Q180 196 120 204Q60 196 52 140Z')(a.muzzle);
+      else s += E(120, 158, a.ears === 'long' ? 28 : 38, a.ears === 'long' ? 22 : 28)(a.muzzle);
+      s += `<path d="M110 142Q120 136 130 142Q128 152 120 154Q112 152 110 142Z" fill="${a.nose || a.ink}"/>` + gloss(116, 142, 3, 1.6, 0, 0.7);
+    }
     s += E(74, 152, 14, 9)('#ff8fab').replace('/>', ' opacity=".6"/>') + E(166, 152, 14, 9)('#ff8fab').replace('/>', ' opacity=".6"/>');
-    const nose = kind === 'bunny' || kind === 'cat' ? '#ff7f9c' : a.ink;
-    s += `<path d="M110 142Q120 136 130 142Q128 152 120 154Q112 152 110 142Z" fill="${nose}"/>` + gloss(116, 142, 3, 1.6, 0, 0.7);
-    if (kind === 'cat') s += line('M58 152L30 146M58 160L30 164M182 152L210 146M182 160L210 164', '#6c7280', 3);
-    // eyes
-    const eyeC = kind === 'panda' ? '#1f1d2c' : a.ink;
-    if (mood === 'happy') {
-      const arc = kind === 'panda' ? '#ffffff' : eyeC;
+    if (a.whiskers) s += line('M58 152L30 146M58 160L30 164M182 152L210 146M182 160L210 164', a.whiskers, 3);
+
+    // ---- eyes: a dark rim, a coloured iris, a pupil and two shines ----
+    const eyeC = a.patches ? '#1f1d2c' : a.ink;
+    if (happy) {
+      const arc = a.patches ? '#ffffff' : eyeC;
       s += line('M76 122Q88 106 100 122', arc, 6) + line('M140 122Q152 106 164 122', arc, 6);
     } else {
-      // Bimi eyes: a dark rim, a coloured iris, a pupil and two shines. No whites.
       for (const x of [88, 152]) {
         s += E(x, 118, 14, 17)(eyeC) + E(x, 120, 10.5, 13)(a.iris) + E(x, 121, 6, 7.5)('#1f1a2a') +
           C(x + 4, 111, 5)('#fff') + C(x - 4, 126, 2.4)('#fff');
       }
-      if (kind !== 'panda') s += line('M78 94Q86 90 94 93M146 93Q154 90 162 94', a.ink, 3.5);
+      if (!a.patches) s += line('M78 94Q86 90 94 93M146 93Q154 90 162 94', a.ink, 3.5);
     }
-    // mouth
-    if (mood === 'happy') {
-      s += `<path d="M104 164Q120 162 136 164Q134 192 120 192Q106 192 104 164Z" fill="#8e2f45"/>`;
-      s += E(120, 184, 9, 5)('#ff7a90');
-      if (kind === 'bunny') s += R(113, 163, 14, 10, 3)('#fff');
+
+    // ---- mouth ----
+    const my = a.snout ? 8 : 0;
+    if (happy) {
+      s += `<path d="M104 ${164 + my}Q120 ${162 + my} 136 ${164 + my}Q134 ${192 + my} 120 ${192 + my}Q106 ${192 + my} 104 ${164 + my}Z" fill="#8e2f45"/>`;
+      s += E(120, 184 + my, 9, 5)('#ff7a90');
+      if (a.teeth) s += R(113, 163, 14, 10, 3)('#fff');
+    } else if (a.snout) {
+      s += line('M110 186Q120 192 130 186', a.ink, 4);
     } else {
       s += line('M120 154L120 162M108 164Q114 170 120 162Q126 170 132 164', a.ink, 4);
     }
-    return svg(240, 300, s);
+    return svg(240, 380, s);
   }
   for (const k of Object.keys(ANIMALS)) {
-    D[`${k}`] = () => face(k, 'idle');
-    D[`${k}-happy`] = () => face(k, 'happy');
+    D[`${k}`] = () => figure(k, 'idle');
+    D[`${k}-happy`] = () => figure(k, 'happy');
   }
 
   // ---------- URL cache ----------
@@ -497,5 +568,5 @@ const Art = (() => {
   // The drawing kit, for the dishes in dishes.js.
   const kit = { C, E, R, P, toon, gloss, shadow, line, svg, id, dark, light };
 
-  return { url, img, bowl, blender, ovenBack, ovenDoor, doughBall, pizzaBase, FROST, kit, names: () => Object.keys(D) };
+  return { ANIMALS, url, img, bowl, blender, ovenBack, ovenDoor, doughBall, pizzaBase, FROST, kit, names: () => Object.keys(D) };
 })();

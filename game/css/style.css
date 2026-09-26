@@ -120,7 +120,7 @@ button { font: inherit; border: 0; padding: 0; background: none; }
 
 /* People stand behind the worktop: the box stops at its edge, so it hides their lower half. */
 .folk { position: absolute; left: 0; right: 0; top: 60px; height: 260px; display: flex; justify-content: center; gap: 22px; overflow: hidden; }
-.folk .person { position: relative; width: 210px; height: 263px; margin-top: 26px; }
+.folk .person { position: relative; width: 210px; height: 333px; margin-top: 26px; }
 .folk .person img { position: absolute; inset: 0; width: 100%; height: 100%; }
 .folk .person .happy { opacity: 0; }
 .folk .person.glad .happy { opacity: 1; }
@@ -132,9 +132,41 @@ button { font: inherit; border: 0; padding: 0; background: none; }
 @keyframes peek { 50% { transform: translateY(12px); } }
 
 .folk.solo { top: 20px; height: 300px; }
-.folk.solo .person { width: 260px; height: 325px; margin-top: 20px; }
+.folk.solo .person { width: 260px; height: 412px; margin-top: 20px; }
 .serve-folk .person.chomp { animation: chomp .4s ease-out; }
 @keyframes chomp { 30% { transform: scale(1.06, .94) translateY(6px); } 60% { transform: scale(.97, 1.03); } }
+
+/* ---------- who's hungry? ---------- */
+/* A cream panel in a purple frame, holding a card for each friend with their name on a tab. */
+.friends-panel {
+  position: absolute; left: 96px; top: 60px; width: 832px; height: 650px;
+  background: #fff8ea; border: 10px solid #9b6fe0; border-radius: 48px;
+  box-shadow: inset 0 0 0 6px #dccbfa, 0 10px 0 rgba(106, 44, 74, .15);
+}
+.friend-cards { position: absolute; inset: 26px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+.friend {
+  position: relative; border-radius: 30px; background: #ffffff; overflow: hidden; cursor: pointer;
+  box-shadow: inset 0 -8px 0 #f1e4cc, 0 0 0 5px #f5deb4;
+  animation: pop-in .45s cubic-bezier(.3, 1.5, .5, 1) both;
+}
+.friend .person { position: absolute; left: 50%; top: 10px; width: 150px; height: 238px; margin-left: -75px; }
+.friend .person img { position: absolute; inset: 0; width: 100%; height: 100%; }
+.friend .person .happy, .friend.picked .person .idle { opacity: 0; }
+.friend.picked .person .happy { opacity: 1; }
+.friend.picked { box-shadow: inset 0 -8px 0 #f1e4cc, 0 0 0 7px #9b6fe0; animation: picked .5s cubic-bezier(.3, 1.6, .5, 1); }
+.friend .tag {
+  position: absolute; left: 12px; right: 12px; bottom: 12px; height: 38px; border-radius: 19px;
+  background: #ffd9b0; color: #8a4a2a; font-size: 22px; font-weight: 700; text-align: center; line-height: 38px;
+}
+.friend.picked .tag { background: #9b6fe0; color: #fff; }
+@keyframes pop-in { from { transform: scale(.4); opacity: 0; } }
+@keyframes picked { 40% { transform: scale(1.08); } }
+
+/* The chosen friend waits by the menu, looking hungry. */
+.menu-friend { position: absolute; left: 412px; top: 110px; width: 200px; height: 210px; overflow: hidden; }
+.menu-friend .person { position: absolute; left: 0; top: 0; width: 200px; height: 317px; animation: peek 2.6s ease-in-out infinite; }
+.menu-friend .person img { position: absolute; inset: 0; width: 100%; height: 100%; }
+.menu-friend .person .happy { opacity: 0; }
 
 /* ---------- menu ---------- */
 .menu-cards { position: absolute; left: 0; right: 0; top: 360px; display: flex; justify-content: center; gap: 36px; }
@@ -231,7 +263,7 @@ button { font: inherit; border: 0; padding: 0; background: none; }
 
 /* The customer popping up from the bottom corner to cheer a finished step. */
 .peek { position: absolute; left: 10px; top: 560px; width: 200px; height: 208px; overflow: hidden; z-index: 30; pointer-events: none; }
-.peek .person { position: absolute; left: 10px; top: 0; width: 180px; height: 225px; transform: translateY(230px); transition: transform .35s cubic-bezier(.3, 1.4, .5, 1); }
+.peek .person { position: absolute; left: 10px; top: 0; width: 180px; height: 285px; transform: translateY(230px); transition: transform .35s cubic-bezier(.3, 1.4, .5, 1); }
 .peek.up .person { transform: translateY(0); }
 .peek .person img { position: absolute; inset: 0; width: 100%; height: 100%; }
 .peek .person .happy { opacity: 0; }
@@ -271,8 +303,7 @@ button { font: inherit; border: 0; padding: 0; background: none; }
 .pizza .p-bite { opacity: 0; transition: opacity .15s; }
 .pizza .p-bite.on { opacity: 1; }
 .plate-box { z-index: 3; }
-.plate-box .food.on-plate { position: absolute; left: 50px; top: 50px; }
-.plate-box .food.on-table { position: absolute; left: 30px; top: 30px; }
+.plate-box .food.served { position: absolute; }
 
 /* Toppings in their dishes, and one in her hand. */
 .dish { z-index: 3; cursor: pointer; }
@@ -315,6 +346,7 @@ button { font: inherit; border: 0; padding: 0; background: none; }
 .screen:not(.active) .done-star,
 .screen:not(.active) .round-btn.tick,
 .screen:not(.active) .order-folk .person,
+.screen:not(.active) .menu-friend .person,
 #start-folk:not(.x) .person { animation-play-state: paused; }
 #screen-start.active #start-folk .person { animation-play-state: running; }
 

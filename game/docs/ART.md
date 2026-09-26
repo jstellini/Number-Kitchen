@@ -27,16 +27,23 @@ the screenshots showed that was wrong.)
 - **Two places.** Cooking happens top-down on a **gingham tablecloth** in the recipe's colour
   (`cloth` in recipes.js; pizza blue, cupcakes pink, smoothie mint). The customer is met and fed in
   the **room**: pink striped wallpaper, a window, a shelf of jars, a wooden worktop.
-- **The food is big.** The dish is centre-stage and large; tools wait at the side.
+- **The food is big.** The dish is centre-stage and large (a pizza about 430px across on the
+  1024px stage); tools wait at the side. The bowl, blender and oven stay side-on by choice.
 - **Toppings wait in round white slots on a cream panel**; the one in hand gets a teal ring.
-- **Faces:** round animals with big eyes made of a dark rim, a coloured iris (green, brown,
-  blue), a pupil and two white shines; small brows; pink blush; tiny nose. Happy = closed-arc
-  eyes and an open mouth. They stand behind the worktop, head and shoulders showing.
+- **The cast:** our own eight animals (Bruno bear, Poppy bunny, Milo cat, Pip panda, Rosie pig,
+  Biscuit puppy, Mimi mouse, Ziggy fox), full-bodied with a big head and a small body: an outfit
+  (overalls, dress or shorts), arms, short legs, shoes, and a tail for some. Eyes are a dark rim,
+  a coloured iris, a pupil and two white shines; small brows; pink blush; tiny nose. Happy =
+  closed-arc eyes, an open mouth and both arms in the air. Behind the worktop only the top half
+  shows; the full figure is on the "who's hungry?" cards, each with a name tab.
 - **The hand** that demonstrates is beige with a purple cuff and button, pointing up-left.
 - **Buttons:** navigation is a purple rounded square with a pale ring; going on is a round green
   (or yellow) button with a pale ring. White icons, no words.
 - **Titles:** white letters in a fat coloured outline.
 - **Sparkles are white four-point twinkles**; confetti is for the finish only.
+- **Swipes leave a glowing trail:** white with a lilac glow, fading in about a quarter of a
+  second (`Fx.swipe`). Cutting also sprays juice and crumbs (`Fx.spray`). No canvas blur: the
+  glow is a wide pale stroke under a white one.
 - **Palette:** gingham blue `#9fbdf2`, pink `#f5a3c7`, mint `#8fd9c4`; wallpaper `#f9c8dd`; nav
   purple `#9b6fe0`; go green `#5bcb62`; sunshine `#ffd23f`; salami `#e05a66`; leaf `#4cb84e`.
 

@@ -50,8 +50,15 @@
     <button id="btn-play" class="round-btn big pulse" aria-label="Play"></button>
   </section>
 
-  <section id="screen-menu" class="screen">
+  <!-- Who's hungry? Pick the friend to cook for. -->
+  <section id="screen-friends" class="screen">
     <button class="round-btn back" data-go="start" aria-label="Back"></button>
+    <div class="friends-panel"><div id="friend-cards" class="friend-cards"></div></div>
+  </section>
+
+  <section id="screen-menu" class="screen">
+    <button class="round-btn back" data-go="friends" aria-label="Back"></button>
+    <div id="menu-friend" class="menu-friend"></div>
     <div id="menu-cards" class="menu-cards"></div>
   </section>
 
