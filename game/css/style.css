@@ -308,7 +308,7 @@ button { font: inherit; border: 0; padding: 0; background: none; }
 /* Toppings in their dishes, and one in her hand. */
 .dish { z-index: 3; cursor: pointer; }
 .picker {
-  position: absolute; left: 684px; top: 292px; width: 314px; height: 452px; z-index: 2;
+  position: absolute; left: 766px; top: 216px; width: 250px; height: 420px; z-index: 2;
   background: #fff8ea; border: 7px solid #f5deb4; border-radius: 44px;
   box-shadow: 0 8px 0 rgba(106, 44, 74, .12);
 }

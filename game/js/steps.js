@@ -16,9 +16,9 @@ const Steps = (() => {
 
   // ---------- shared furniture ----------
   // The board's round is centred at (cx, cy) with the handle off to the right. Its round is
-  // 384/470 of its width; pass the pizza's width as `under` to size it with a rim to spare.
+  // 384/470 of its width; pass the pizza's width as `under` to size it with a thin rim to spare.
   function board(root, cx, cy, w = 470, under = 0) {
-    if (under) w = under * 470 / 360;
+    if (under) w = under * 470 / 372;
     const el = put(Art.img('board'), cx + w * 35 / 470, cy, w, 'board');
     root.appendChild(el);
     return el;
@@ -82,8 +82,10 @@ const Steps = (() => {
   // Put the ingredients into the bowl or the blender.
   // ---------------------------------------------------------------------------------------
   const VESSELS = {
-    bowl: { art: () => Art.bowl(), at: { x: 512, y: 470 }, mouth: { x: 512, y: 410 } },
-    blender: { art: () => Art.blender(), at: { x: 512, y: 450 }, mouth: { x: 512, y: 292 } },
+    // at = centre, w = drawn width, mouth = where things go in (derived from each drawing's
+    // opening: the bowl's at 114/330 of its height, the blender's at 58/420).
+    bowl: { art: () => Art.bowl(), at: { x: 512, y: 480 }, w: 540, mouth: { x: 512, y: 411 } },
+    blender: { art: () => Art.blender(), at: { x: 512, y: 470 }, w: 520, mouth: { x: 512, y: 282 } },
   };
   // Poured things tip and stream; dropped things fall in.
   const ITEMS = {
@@ -99,7 +101,7 @@ const Steps = (() => {
 
   function vessel(root, spec, meal, extra = '') {
     const v = VESSELS[spec.vessel || 'bowl'];
-    const el = put(v.art(), v.at.x, v.at.y, 440, `vessel ${spec.vessel || 'bowl'} ${meal.added.join(' ')} ${extra}`);
+    const el = put(v.art(), v.at.x, v.at.y, v.w, `vessel ${spec.vessel || 'bowl'} ${meal.added.join(' ')} ${extra}`);
     root.appendChild(el);
     return { el, ...v };
   }
@@ -166,7 +168,7 @@ const Steps = (() => {
   // Stir round and round with a spoon or a whisk, until it is dough or batter.
   // ---------------------------------------------------------------------------------------
   function stir(root, meal, done, spec) {
-    const A = { x: 512, y: 414 }, RX = 150, RY = 44, TURNS = 3;
+    const A = VESSELS.bowl.mouth, RX = 184, RY = 54, TURNS = 3;
     const bowl = vessel(root, { vessel: 'bowl' }, meal, 'instant').el;
     const raw = meal.added.map(n => bowl.querySelector(`.v-${n}`)).filter(Boolean);
     const batter = bowl.querySelector('.v-batter'), dough = bowl.querySelector('.v-dough');
@@ -210,13 +212,18 @@ const Steps = (() => {
     // A tap stirs one full turn by itself.
     function autoStir() {
       if (auto || finished) return;
-      const a0 = angle ?? 0;
+      const a0 = angle ?? 0, owed = total + 2 * Math.PI;
       let k = 0;
       auto = loop(dt => {
         k = Math.min(1, k + dt / 1100);
         const a = a0 + k * 2 * Math.PI;
         setTip({ x: A.x + Math.cos(a) * RX * 0.7, y: A.y + Math.sin(a) * RY * 0.7 });
-        if (k >= 1 || finished) { auto = null; return false; }
+        if (k >= 1 || finished) {
+          // A tap is worth exactly one turn, however the frames fell.
+          auto = null;
+          if (!finished && total < owed) { total = owed; show(total / (TURNS * 2 * Math.PI)); }
+          return false;
+        }
       });
     }
 
@@ -241,7 +248,7 @@ const Steps = (() => {
   // ---------------------------------------------------------------------------------------
   function blend(root, meal, done) {
     const V = vessel(root, { vessel: 'blender' }, meal, 'instant');
-    const el = V.el, BUTTON = { x: 512, y: 590 }, NEED = 3000;
+    const el = V.el, BUTTON = { x: 512, y: 636 }, NEED = 3000;
     const spin = el.querySelector('.v-spin'), milk = el.querySelector('.v-milk'), smoothie = el.querySelector('.v-smoothie');
     let done_ = 0, held = false, until = 0, run = null, finished = false;
 
@@ -284,10 +291,10 @@ const Steps = (() => {
   // Pour from the jug into each cup, or from the blender into the glass.
   // ---------------------------------------------------------------------------------------
   function pour(root, meal, done, spec) {
-    const dish = meal.dish, s = meal.state, W = 460, C = { x: 410, y: 500 };
+    const dish = meal.dish, s = meal.state, W = dish.view?.w || 620, C = { x: 400, y: 460 + (dish.view?.dy || 0) };
     const { el } = foodAt(root, meal, C.x, C.y, W);
     const T = dish.targets.map(u => toStage(u, C, W));
-    const HOME = { x: 860, y: 470 }, TILT = 'rotate(-40deg)', SPOUT = { x: -106, y: -5 };
+    const HOME = { x: 890, y: 470 }, TILT = 'rotate(-40deg)', SPOUT = { x: -106, y: -5 };
     const RATE = 1 / (T.length > 1 ? 800 : 1800);
     const jug = put(Art.img(spec.from), HOME.x, HOME.y, 220, 'jug');
     root.appendChild(jug);
@@ -296,7 +303,7 @@ const Steps = (() => {
     stream.style.background = spec.color;
     root.appendChild(stream);
 
-    let busy = false, finished = false, run = null, finger = null, onJug = false;
+    let busy = false, finished = false, run = null, finger = null, onJug = false, queued = 0;
     const unfilled = () => T.findIndex((t, i) => s.fill[i] < 1);
 
     function flow(i, dt) {
@@ -327,11 +334,14 @@ const Steps = (() => {
       if (unfilled() >= 0) await fly(jug, HOME, 400);
       busy = false;
       checkDone();
+      // Taps made while it was pouring are not lost: each one pours the next cup.
+      if (queued > 0 && !finished) { queued--; autoPour(unfilled()); }
     }
 
     drag(root, {
       start: (p, e) => {
-        if (busy || finished) return false;
+        if (finished) return false;
+        if (busy) { queued++; return false; }
         onJug = !!e.target.closest('.jug');
         finger = p;
         if (!onJug) return;
@@ -367,13 +377,14 @@ const Steps = (() => {
   // Pipe frosting onto each cupcake, in whichever colour she picks up.
   // ---------------------------------------------------------------------------------------
   function frost(root, meal, done) {
-    const dish = meal.dish, s = meal.state, W = 460, C = { x: 410, y: 490 };
+    const dish = meal.dish, s = meal.state, W = dish.view?.w || 620, C = { x: 400, y: 460 + (dish.view?.dy || 0) };
     const { el } = foodAt(root, meal, C.x, C.y, W);
     const TOPS = dish.CUPS.map(c => toStage({ x: c.x, y: c.y - 40 }, C, W));
     const TIP = 75;
     let busy = false, finished = false, last = 'pink';
+    const queue = [];                      // bags tapped while another was piping
     const bags = Object.keys(Art.FROST).map((name, i) => {
-      const b = put(Art.img(`bag-${name}`), 870, 300 + i * 170, 170, 'bag');
+      const b = put(Art.img(`bag-${name}`), 905, 250 + i * 185, 180, 'bag');
       b.colour = name;
       root.appendChild(b);
       return b;
@@ -393,17 +404,24 @@ const Steps = (() => {
       Fx.sparkle(TOPS[i], 8);
       await wait(200);
       bag.classList.remove('squeeze');
-      busy = false;
       if (next() < 0) {
         finished = true;
         fly(bag, bag.home, 400);
         finish(done, C);
-      } else fly(bag, bag.home, 400);
+        return;
+      }
+      await fly(bag, bag.home, 300);
+      busy = false;
+      // Taps made while it was piping are not lost: each one frosts the next cupcake.
+      if (queue.length && !finished) pipe(queue.shift(), next());
     }
 
     for (const bag of bags) {
       drag(bag, {
-        start: () => !busy && !finished,
+        start: () => {
+          if (finished) return false;
+          if (busy) { queue.push(bag); return false; }
+        },
         move: p => moveTo(bag, p, 'rotate(-10deg)'),
         end: (p, moved) => {
           if (!moved) return pipe(bag, next());
@@ -427,12 +445,12 @@ const Steps = (() => {
   // Roll the ball of dough out flat.
   // ---------------------------------------------------------------------------------------
   function roll(root, meal, done) {
-    const C = { x: 512, y: 480 }, W = 430, NEED = 1500;
+    const C = { x: 460, y: 450 }, W = 600, NEED = 2000;
     board(root, C.x, C.y, 0, W);
     const base = foodAt(root, meal, C.x, C.y, W, 'rolling');
-    const ball = put(Art.doughBall(), C.x, C.y, 265, 'ball');
+    const ball = put(Art.doughBall(), C.x, C.y, 360, 'ball');
     root.appendChild(ball);
-    const pin = put(Art.img('rollingpin'), C.x, 690, 360, 'pin');
+    const pin = put(Art.img('rollingpin'), C.x, 710, 460, 'pin');
     root.appendChild(pin);
 
     let rolled = 0, lastY = null, finished = false, auto = null;
@@ -445,13 +463,13 @@ const Steps = (() => {
       base.box.style.opacity = clamp(t * 2.2, 0, 1);
       if (t >= 1 && !finished) {
         finished = true;
-        fly(pin, { x: 890, y: 690 }, 500, 'rotate(-30deg)');
+        fly(pin, { x: 890, y: 710 }, 500, 'rotate(-30deg)');
         finish(done, C);
       }
     }
 
     function setY(y) {
-      y = clamp(y, 300, 660);
+      y = clamp(y, 190, 710);
       moveTo(pin, { x: C.x, y });
       if (lastY !== null) { rolled += Math.abs(y - lastY); Sfx.squish(); }
       lastY = y;
@@ -464,7 +482,7 @@ const Steps = (() => {
       lastY = null;
       auto = loop(dt => {
         k = Math.min(1, k + dt / 1000);
-        setY(C.y + Math.cos(k * Math.PI * 2) * 170);
+        setY(C.y + Math.cos(k * Math.PI * 2) * 240);
         if (k >= 1 || finished) { auto = null; return false; }
       });
     }
@@ -478,7 +496,7 @@ const Steps = (() => {
     drag(ball, handlers);
     show();
 
-    Hint.set(() => [{ x: C.x, y: 690 }, { x: C.x, y: 330 }, { x: C.x, y: 620 }, { x: C.x, y: 360 }]);
+    Hint.set(() => [{ x: C.x, y: 710 }, { x: C.x, y: 230 }, { x: C.x, y: 660 }, { x: C.x, y: 260 }]);
     return { stop() { if (auto) auto.stop(); finished = true; } };
   }
 
@@ -486,12 +504,12 @@ const Steps = (() => {
   // Paint the sauce on with the ladle. Anywhere she touches the pizza gets sauce.
   // ---------------------------------------------------------------------------------------
   function sauce(root, meal, done) {
-    const C = { x: 512, y: 480 }, W = 430, BLOB = 38;
+    const C = { x: 460, y: 450 }, W = 600, BLOB = 38;
     board(root, C.x, C.y, 0, W);
     const { el: pz } = foodAt(root, meal, C.x, C.y, W);
     const layer = pz.querySelector('.p-sauce');
     // The ladle's bowl is 88px below the element's centre; it rides a little above her finger.
-    const ladle = put(Art.img('ladle'), 880, 470, 300, 'ladle');
+    const ladle = put(Art.img('ladle'), 915, 450, 320, 'ladle');
     root.appendChild(ladle);
 
     const cells = [];
@@ -512,7 +530,7 @@ const Steps = (() => {
         finished = true;
         meal.state.sauced = true;
         pz.classList.add('sauced');
-        fly(ladle, { x: 880, y: 470 }, 500);
+        fly(ladle, { x: 915, y: 450 }, 500);
         finish(done, C);
       }
     }
@@ -523,7 +541,7 @@ const Steps = (() => {
       let k = 0;
       auto = loop(dt => {
         k = Math.min(1, k + dt / 1600);
-        const a = k * Math.PI * 6, r = (1 - k) * 175;
+        const a = k * Math.PI * 6, r = (1 - k) * 245;
         paint({ x: C.x + Math.cos(a) * r, y: C.y + 40 + Math.sin(a) * r });
         if (k >= 1 || finished) { auto = null; return false; }
       });
@@ -540,7 +558,7 @@ const Steps = (() => {
       end: (p, moved) => { if (!moved && onLadle) autoPaint(); },
     });
 
-    Hint.set(() => [{ x: 880, y: 430 }, { x: 420, y: 380 }, { x: 600, y: 420 }, { x: 430, y: 520 }, { x: 600, y: 560 }]);
+    Hint.set(() => [{ x: 915, y: 410 }, { x: 330, y: 340 }, { x: 590, y: 380 }, { x: 330, y: 500 }, { x: 590, y: 540 }]);
     return { stop() { if (auto) auto.stop(); finished = true; } };
   }
 
@@ -548,11 +566,11 @@ const Steps = (() => {
   // Decorate: take a topping from a dish and drop it anywhere on the food.
   // ---------------------------------------------------------------------------------------
   function decorate(root, meal, done, spec) {
-    const dish = meal.dish, W = dish.board ? 425 : 460, C = { x: dish.board ? 372 : 380, y: dish.board ? 485 : 490 };
+    const dish = meal.dish, W = dish.board ? 600 : dish.view?.w || 620, C = { x: 385, y: 450 + (dish.view?.dy || 0) };
     const MAX = 30, ENOUGH = 5;
     if (dish.board) board(root, C.x, C.y, 0, W);
     const { el } = foodAt(root, meal, C.x, C.y, W);
-    const spots = [[765, 372], [915, 372], [765, 518], [915, 518], [765, 664]];
+    const spots = [[832, 290], [950, 290], [832, 425], [950, 425], [832, 560]];
     let finished = false;
 
     // The toppings wait in round slots on a cream panel, the way Bimi lays them out.
@@ -562,7 +580,7 @@ const Steps = (() => {
     const tick = document.createElement('button');
     tick.className = 'round-btn tick hidden';
     tick.innerHTML = Kit.icon('tick');
-    tick.style.cssText = 'left:855px;top:604px';
+    tick.style.cssText = 'left:900px;top:510px;width:100px;height:100px';
     root.appendChild(tick);
     tap(tick, () => {
       if (finished) return;
@@ -573,7 +591,7 @@ const Steps = (() => {
 
     spec.items.forEach((kind, i) => {
       const [x, y] = spots[i];
-      const bowl = put(Art.img(kind), x, y, 128, 'dish slot');
+      const bowl = put(Art.img(kind), x, y, 108, 'dish slot');
       root.appendChild(bowl);
 
       let ghost = null;
@@ -611,8 +629,8 @@ const Steps = (() => {
     });
 
     Hint.set(() => {
-      if (meal.state.toppings.length >= ENOUGH) return [{ x: 915, y: 664 }, { x: 912, y: 660 }];
-      return [{ x: 765, y: 372 }, C];
+      if (meal.state.toppings.length >= ENOUGH) return [{ x: 950, y: 560 }, { x: 947, y: 556 }];
+      return [{ x: 832, y: 290 }, C];
     });
     return { stop() { finished = true; } };
   }
@@ -667,11 +685,11 @@ const Steps = (() => {
   // Cut it into slices: roll the cutter along each dotted line.
   // ---------------------------------------------------------------------------------------
   function cut(root, meal, done) {
-    const C = { x: 512, y: 480 }, W = 430;
+    const C = { x: 460, y: 450 }, W = 600;
     board(root, C.x, C.y, 0, W);
     const { el: pz } = foodAt(root, meal, C.x, C.y, W, 'cutting');
     // The wheel is 78px above the element's centre; it rides a little above her finger.
-    const cutter = put(Art.img('cutter'), 880, 520, 280, 'cutter');
+    const cutter = put(Art.img('cutter'), 930, 520, 280, 'cutter');
     root.appendChild(cutter);
     const OFF = { x: 0, y: -50 };
     let trail = [], finished = false, auto = false, stroke = 0;
@@ -696,7 +714,7 @@ const Steps = (() => {
       trail = [];
       if (!uncut().length && !finished) {
         finished = true;
-        fly(cutter, { x: 880, y: 520 }, 500);
+        fly(cutter, { x: 930, y: 520 }, 500);
         finish(done, C);
       }
     }
@@ -767,14 +785,14 @@ const Steps = (() => {
   // ---------------------------------------------------------------------------------------
   function serve(root, meal, done) {
     const who = meal.customer, dish = meal.dish;
-    const FACE = { x: 512, y: 200 }, TABLE = { x: 512, y: 430 }, START = { x: 512, y: 555 };
+    const FACE = { x: 512, y: 200 }, TABLE = { x: 512, y: 440 }, START = { x: 512, y: 565 };
     const folk = document.createElement('div');
     folk.className = 'folk solo serve-folk';
     folk.innerHTML = `<div class="person">${Art.img(who, 'idle')}${Art.img(who + '-happy', 'happy')}</div>`;
     root.appendChild(folk);
     const person = folk.querySelector('.person');
 
-    const T = 460, F = dish.plate ? 345 : 390;
+    const T = 540, F = dish.plate ? 405 : 460;
     const tray = put(dish.plate ? Art.img('plate') : '', START.x, START.y, T, 'plate-box');
     const food = dish.make(meal.state, F);
     food.classList.add('served');

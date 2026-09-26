@@ -27,8 +27,10 @@ the screenshots showed that was wrong.)
 - **Two places.** Cooking happens top-down on a **gingham tablecloth** in the recipe's colour
   (`cloth` in recipes.js; pizza blue, cupcakes pink, smoothie mint). The customer is met and fed in
   the **room**: pink striped wallpaper, a window, a shelf of jars, a wooden worktop.
-- **The food is big.** The dish is centre-stage and large (a pizza about 430px across on the
-  1024px stage); tools wait at the side. The bowl, blender and oven stay side-on by choice.
+- **The food fills the screen.** The dish takes most of the 768px height: a pizza about 600px
+  across, the cupcake tray 680px wide, the bowl 540px. Tools wait at the edges, toppings in a
+  slim picker on the right. A dish whose drawing does not fill its square says so with `view`
+  in dishes.js. The bowl, blender and oven stay side-on by choice.
 - **Toppings wait in round white slots on a cream panel**; the one in hand gets a teal ring.
 - **The cast:** our own eight animals (Bruno bear, Poppy bunny, Milo cat, Pip panda, Rosie pig,
   Biscuit puppy, Mimi mouse, Ziggy fox), full-bodied with a big head and a small body: an outfit

@@ -10,6 +10,8 @@
 //   frost()                   pipe frosting onto one cup            (cupcakes)
 //   bake(el, state)
 //   bites(el, state)          a list of functions, one per mouthful, for serving
+//   view                      optional { w, dy }: how big to draw it on the tablecloth, and how
+//                             far to shift it, for a drawing that does not fill its square
 //
 // Positions are in the dish's own 0–400 units, so a dish can be drawn at any size.
 const Dishes = (() => {
@@ -164,6 +166,7 @@ const Dishes = (() => {
     }
 
     return {
+      view: { w: 680, dy: -70 },               // the tray only fills the lower part of its square
       CUPS, blank, sample, make, place, spot, addTopping, setFill, frost, nearest,
       targets: CUPS.map(c => ({ x: c.x, y: c.y })),
       bake(el, s) { s.baked = true; el.classList.add('baked'); },
